@@ -39,28 +39,53 @@ Each player has the following attributes:
 - Name
 - Model
 - Background prompt
-- HP
+- HP (starts with 7)
 - Opinions of other players
-- backstab success rate
+- Backstab success rate (starts at 30%)
 
 Each player has the following actions:
-- Negotiation, where the output is a thinking process, a speech content, and an action
+- Negotiation, which outputs:
+  - Thinking process
+  - Speech content
+  - Action (Offer/Refuse/Kill)
 - Update opinion about other players
-- Execution, where the output is a boolean variable
+- Execution decision (backstab or not)
 
 ### Game
-The game contains a list of rounds, and a description to give a story to the game
+The game contains a list of rounds and a description to give a story to the game.
 
 #### Round
 A round has the following attributes:
-- Damage required
+- Damage required (default 6)
 - Description, to give a story to the game
-- Status of the round. Completed to Not
-
+- Status (Not Completed/Completed)
+- Current negotiation attempt count
+- Player action sequence (randomly determined each phase)
+- Active players list
 
 #### Game actions
-- Validate sufficient damage to pass the round
-- Validate a kill to pass the round
-- Deal damage for 3 failed negotiations
-- Carry out the execution process, to assign damage to players
-- Randomize the backstab success
+- Phase management:
+  - Switch between negotiation and execution phases
+  - Determine random player sequence for each phase
+  - Track negotiation attempts (apply damage after 3 failures)
+
+- Round validation:
+  - Check for sufficient damage offers
+  - Process immediate round completion on Kill action
+  - Validate player death conditions
+  - Track round completion status
+
+- Damage management:
+  - Apply negotiation failure damage (-1 HP to all players)
+  - Process backstab attempts:
+    - Calculate success chance (30% - 5% per previous attempt)
+    - Distribute damage on successful backstab
+    - Force remaining damage to last player if all backstab
+  - Apply direct damage from offers
+  - Handle player death events
+
+- Player management:
+  - Track active players
+  - Update player opinions
+  - Manage player turn order
+  - Handle player elimination
