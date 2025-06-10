@@ -12,7 +12,7 @@ Each player starts with X amount of health points (HP). Each round can be passed
 
 At each round, there are 2 phases:
 
-#Phase 1: negotiation.
+### Phase 1: negotiation.
 During the negotiation phase, each player produces a speech and an action. The sequence is randomly determined. The speech can be used to persuade, beg for mercy, offer to collaborate, etc, but has no impact to the game proceeding itself. The action is 1 of the following:
 - Offer: Offer to take a certain amount of HP damage
 - Refuse: Refuse to take any damage
@@ -24,7 +24,7 @@ If no players decide to kill after all players have made their choice, the syste
 
 Every 3 failed negotiation phases will result in 1 HP damage to each of the surviving players.
 
-#Phase 2: sacrifice.
+### Phase 2: sacrifice.
 When the players have agreed to offer sufficient HP, the game enters the sacrifice stage, where the players who offer HP will take turns to decide if they will backstab the rest. The sequence is determined randomly. 
 
 If a player decides to backstab, there is a x% of chance the backstab succeeds, and they do not need to take the damage. The damange that is supposed to be taken will be shared equally among the other players. Regardless of whether the backstab succeeds, the chance of success of their next backstab increases by y%.
