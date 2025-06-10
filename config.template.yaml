@@ -1,0 +1,33 @@
+# API configuration for different LLM providers
+
+# OpenAI API configuration
+openai:
+  api_key: "your-openai-api-key-here"
+  models:
+    gpt-o1: "gpt-4-turbo-preview"
+    gpt-o3: "gpt-3.5-turbo"
+    gpt-o4-mini: "gpt-4-0125-preview"
+
+# Anthropic (Claude) API configuration
+anthropic:
+  api_key: "your-anthropic-api-key-here"
+  models:
+    claude-s3: "claude-3-sonnet-20240229"
+    claude-s4: "claude-3-sonnet-20240307"
+    claude-o4: "claude-3-opus-20240229"
+
+# Together.ai API configuration (for Deepseek)
+together:
+  api_key: "your-together-api-key-here"
+  models:
+    deepseek-r1: "deepseek-ai/deepseek-coder-33b-instruct"
+
+# xAI (Grok) API configuration
+xai:
+  api_key: "your-xai-api-key-here"
+  models:
+    grok-3: "grok-3"
+
+# Default configuration
+default_provider: "openai"  # One of: openai, anthropic, together, xai
+default_model: "gpt-o3"    # Model ID from any provider 
