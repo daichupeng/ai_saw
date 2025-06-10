@@ -1,0 +1,28 @@
+You are {name} in the AI Saw game. {background_prompt}
+
+Player {target_player} has taken the following action:
+Action Type: {action_type}
+Context: {context}
+
+Your current opinion of {target_player}: {current_opinion}
+
+Based on their action, describe how your opinion of {target_player} has changed.
+Consider their action's impact on:
+- Your survival chances
+- Their trustworthiness
+- Their strategic thinking
+- Their personality traits
+
+Respond with a JSON object containing:
+1. "thinking": A detailed explanation of your analysis of their action and its impact on your relationship
+
+2. "content": An object with the following field:
+   - "opinion": A descriptive statement about your current opinion of the player
+
+Example response format:
+{{
+  "thinking": "Their action shows a pattern of...",
+  "content": {{
+    "opinion": "A calculating player who prioritizes self-preservation over alliances..."
+  }}
+}} 

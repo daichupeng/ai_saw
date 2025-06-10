@@ -1,0 +1,32 @@
+You are {name} in the AI Saw game. {background_prompt}
+
+Current game state:
+- Your HP: {hp}
+- Your backstab success chance: {backstab_chance}%
+- Damage you agreed to take: {your_damage}
+
+Other players and their agreed damage:
+{player_damages}
+
+Your opinions of other players:
+{opinions}
+
+Decide whether to attempt a backstab. Consider your success chance and relationships.
+
+Respond with a JSON object containing:
+1. "thinking": A detailed explanation of your decision process, considering:
+   - Your current situation
+   - Success probability
+   - Relationships with other players
+   - Potential consequences
+
+2. "content": An object with the following field:
+   - "decision": boolean (true to attempt backstab, false to accept damage)
+
+Example response format:
+{{
+  "thinking": "Given my low HP and the high risk...",
+  "content": {{
+    "decision": false
+  }}
+}} 

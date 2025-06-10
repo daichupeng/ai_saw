@@ -4,7 +4,6 @@ __pycache__/
 *$py.class
 *.so
 .Python
-env/
 build/
 develop-eggs/
 dist/
@@ -21,15 +20,30 @@ wheels/
 .installed.cfg
 *.egg
 
-# Environment variables
+# Virtual Environment
 .env
-config.yaml
+.venv
+env/
+venv/
+ENV/
 
 # IDE
 .idea/
 .vscode/
 *.swp
 *.swo
+
+# Test logs and results
+tests/*_log_*.txt
+tests/*_results_*.txt
+
+# Configuration
+config.yaml
+.env
+
+# Environment variables
+.env
+config.yaml
 
 # OS
 .DS_Store

@@ -1,5 +1,6 @@
 import os
-from typing import Optional, Literal, Dict, Any
+import json
+from typing import Optional, Literal, Dict, Any, Tuple
 from dataclasses import dataclass
 import yaml
 from pathlib import Path
@@ -81,23 +82,36 @@ class LLMClient:
         except Exception as e:
             raise LLMError(f"Error getting response from LLM: {str(e)}")
 
-    def _parse_response(self, text: str) -> tuple[str, str]:
+    def _parse_response(self, text: str) -> Tuple[str, str]:
         """Parse the response text into thinking and content parts."""
-        thinking = ""
-        content = ""
-        
-        # Split the text into sections
-        parts = text.split("[THINKING]")
-        if len(parts) > 1:
-            thinking_and_content = parts[1].split("[CONTENT]")
-            if len(thinking_and_content) > 1:
-                thinking = thinking_and_content[0].strip()
-                content = thinking_and_content[1].strip()
-            else:
-                # If no [CONTENT] marker, treat everything after [THINKING] as thinking
-                thinking = thinking_and_content[0].strip()
-        else:
-            # If no markers found, treat entire response as content
-            content = text.strip()
+        try:
+            # Try to parse as JSON
+            response_json = json.loads(text)
             
-        return thinking, content
+            # Extract thinking and content
+            thinking = response_json.get("thinking", "")
+            content = json.dumps(response_json.get("content", {}))  # Convert content back to JSON string
+            
+            return thinking, content
+            
+        except json.JSONDecodeError:
+            # Fallback to old text parsing method
+            print("Warning: Failed to parse JSON response, falling back to text parsing")
+            thinking = ""
+            content = ""
+            
+            # Split the text into sections
+            parts = text.split("[THINKING]")
+            if len(parts) > 1:
+                thinking_and_content = parts[1].split("[CONTENT]")
+                if len(thinking_and_content) > 1:
+                    thinking = thinking_and_content[0].strip()
+                    content = thinking_and_content[1].strip()
+                else:
+                    # If no [CONTENT] marker, treat everything after [THINKING] as thinking
+                    thinking = thinking_and_content[0].strip()
+            else:
+                # If no markers found, treat entire response as content
+                content = text.strip()
+                
+            return thinking, content
