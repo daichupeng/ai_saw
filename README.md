@@ -1,36 +1,35 @@
 # AI Saw
 
+v 0.1
 ## Description
-AI Saw is an innovative project that leverages artificial intelligence to enhance and optimize various processes. This repository contains the source code and documentation for the project.
+This is a game inspired by the movie Saw.
 
-## Features
-- Feature 1
-- Feature 2
-- Feature 3
+This game involves multiple AI agent (aka player) in a multi-round setup. Each of the players' purpose is to survive throught the round with minimum damage possible.
 
-## Installation
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/ai_saw.git
+Each player starts with X amount of health points (HP). Each round can be passed by 1 of the following ways:
+- Cause total Y amount of HP of damage to 1 or more player
+- 1 or more players loses all of their HP
 
-# Navigate to the project directory
-cd ai_saw
+At each round, there are 2 phases:
 
-# Install dependencies
-# (Add specific installation instructions here)
-```
+Phase 1: negotiation.
+During the negotiation phase, each player produces a speech and an action. The sequence is randomly determined. The speech can be used to persuade, beg for mercy, offer to collaborate, etc, but has no impact to the game proceeding itself. The action is 1 of the following:
+- Offer: Offer to take a certain amount of HP damage
+- Refuse: Refuse to take any damage
+- Kill: Take 1 HP damage, and force another player with less HP points than the acting player to die and pass the round.
 
-## Usage
-```bash
-# Add usage instructions here
-```
+If one of the players decide to kill, the negotiation phase ends and all the remaining players advance to the next round.
 
-## Contributing
-Contributions are welcome! Please feel free to submit a Pull Request.
+If no players decide to kill after all players have made their choice, the system compares the sum of all the offered HP points to the HP points required to pass the round. If it's not sufficient, the negotiation starts over.
 
-## License
-This project is licensed under the MIT License - see the LICENSE file for details.
+Every 3 failed negotiation phases will result in 1 HP damage to each of the surviving players.
 
-## Contact
-- Your Name - your.email@example.com
-- Project Link: https://github.com/yourusername/ai_saw 
+Phase 2: sacrifice.
+When the players have agreed to offer sufficient HP, the game enters the sacrifice stage, where the players who offer HP will take turns to decide if they will backstab the rest. The sequence is determined randomly. 
+
+If a player decides to backstab, there is a x% of chance the backstab succeeds, and they do not need to take the damage. The damange that is supposed to be taken will be shared equally among the other players. Regardless of whether the backstab succeeds, the chance of success of their next backstab increases by y%.
+
+If all the players successfully backstab, the last remaining player is forced to take all the damage for this round.
+
+
+## 
