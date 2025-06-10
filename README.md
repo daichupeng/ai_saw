@@ -6,8 +6,8 @@ This is a game inspired by the movie Saw.
 
 This game involves multiple AI agent (aka player) in a multi-round setup. Each of the players' purpose is to survive throught the round with minimum damage possible.
 
-Each player starts with X amount of health points (HP). Each round can be passed by 1 of the following ways:
-- Cause total Y amount of HP of damage to 1 or more player
+5 players play the game. Each player starts with 7 amount of health points (HP). Each round can be passed by 1 of the following ways:
+- Cause total 6 amount of HP of damage to 1 or more player
 - 1 or more players loses all of their HP
 
 At each round, there are 2 phases:
@@ -22,14 +22,45 @@ If one of the players decide to kill, the negotiation phase ends and all the rem
 
 If no players decide to kill after all players have made their choice, the system compares the sum of all the offered HP points to the HP points required to pass the round. If it's not sufficient, the negotiation starts over.
 
-Every 3 failed negotiation phases will result in 1 HP damage to each of the surviving players.
+Every 3 failed negotiation phases in a round will result in 1 HP damage to each of the surviving players. If any player dies due to the failed negotiations, the round is NOT passed.
 
-### Phase 2: sacrifice.
+### Phase 2: execution.
 When the players have agreed to offer sufficient HP, the game enters the sacrifice stage, where the players who offer HP will take turns to decide if they will backstab the rest. The sequence is determined randomly. 
 
-If a player decides to backstab, there is a x% of chance the backstab succeeds, and they do not need to take the damage. The damange that is supposed to be taken will be shared equally among the other players. Regardless of whether the backstab succeeds, the chance of success of their next backstab increases by y%.
+If a player decides to backstab, there is 30% of chance the backstab succeeds, and they do not need to take the damage. The damange that is supposed to be taken will be shared equally among the other players. Regardless of whether the backstab succeeds, the chance of success of their next backstab decreases by 5%.
 
 If all the players successfully backstab, the last remaining player is forced to take all the damage for this round.
 
 
-## 
+## Game design
+
+### Player
+Each player has the following attributes:
+- Name
+- Model
+- Background prompt
+- HP
+- Opinions of other players
+- backstab success rate
+
+Each player has the following actions:
+- Negotiation, where the output is a thinking process, a speech content, and an action
+- Update opinion about other players
+- Execution, where the output is a boolean variable
+
+### Game
+The game contains a list of rounds, and a description to give a story to the game
+
+#### Round
+A round has the following attributes:
+- Damage required
+- Description, to give a story to the game
+- Status of the round. Completed to Not
+
+
+#### Game actions
+- Validate sufficient damage to pass the round
+- Validate a kill to pass the round
+- Deal damage for 3 failed negotiations
+- Carry out the execution process, to assign damage to players
+- Randomize the backstab success
