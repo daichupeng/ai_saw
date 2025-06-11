@@ -1,0 +1,48 @@
+[16:15:26] === AI SAW GAME RECORD ===
+[16:15:26] Game Description: A game of survival, negotiation, and betrayal.
+[16:15:26] 
+Initial Players:
+[16:15:26]   - Strategist:
+[16:15:26]     HP: 7
+[16:15:26]     Background: You are a calculating and strategic player who carefully analyzes each situation. You value information and try to predict others' moves. You prefer stable alliances but will betray if the odds are strongly in your favor.
+[16:15:26]     Backstab Success Rate: 30.0%
+[16:15:26]   - Survivor:
+[16:15:26]     HP: 7
+[16:15:26]     Background: You are a cautious player focused primarily on survival. You avoid conflict when possible and prefer to let others take risks. However, you can be ruthless if cornered.
+[16:15:26]     Backstab Success Rate: 30.0%
+[16:15:26]   - Diplomat:
+[16:15:26]     HP: 7
+[16:15:26]     Background: You are a charismatic negotiator who excels at building alliances. You try to maintain peace and coordinate group actions. You avoid betrayal unless absolutely necessary.
+[16:15:26]     Backstab Success Rate: 30.0%
+[16:15:26]   - Warrior:
+[16:15:26]     HP: 7
+[16:15:26]     Background: You are an aggressive and direct player who isn't afraid of conflict. You respect strength and honesty, despise cowardice, and prefer straightforward solutions.
+[16:15:26]     Backstab Success Rate: 30.0%
+[16:15:26]   - Trickster:
+[16:15:26]     HP: 7
+[16:15:26]     Background: You are an unpredictable player who enjoys creating chaos. You use misdirection and manipulation, making it hard for others to anticipate your moves.
+[16:15:26]     Backstab Success Rate: 30.0%
+[16:15:26] 
+==================================================
+
+[16:15:26] 
+🎲 ROUND 1
+[16:15:26]   Active Players:
+[16:15:26]     - Strategist (HP: 7)
+[16:15:26]     - Survivor (HP: 7)
+[16:15:26]     - Diplomat (HP: 7)
+[16:15:26]     - Warrior (HP: 7)
+[16:15:26]     - Trickster (HP: 7)
+[16:15:26] 
+💬 NEGOTIATION ATTEMPT 1
+[16:15:26]   Damage Required: 6
+[16:15:26]     Opinion Update - Observer: Strategist, Subject: Diplomat, Request ID: 427d1cf2-6208-47a3-a48f-ead72164de20 (Request ID: 427d1cf2-6208-47a3-a48f-ead72164de20)
+[16:15:26]     Opinion Update - Observer: Survivor, Subject: Diplomat, Request ID: 6cb1eee3-069b-456d-877e-51f44963176e (Request ID: 6cb1eee3-069b-456d-877e-51f44963176e)
+[16:15:26]     Opinion Update - Observer: Warrior, Subject: Diplomat, Request ID: fe196b26-7f2c-47d9-8782-14ba92881b51 (Request ID: fe196b26-7f2c-47d9-8782-14ba92881b51)
+[16:15:26]     Opinion Update - Observer: Trickster, Subject: Diplomat, Request ID: 9ad60407-a292-4859-947f-86735ab18a2f (Request ID: 9ad60407-a292-4859-947f-86735ab18a2f)
+[16:15:26]     Opinion Update - Observer: Strategist, Subject: Trickster, Request ID: ee4b83b0-0c8b-4d99-93b0-03170b27b56d (Request ID: ee4b83b0-0c8b-4d99-93b0-03170b27b56d)
+[16:15:26]     Opinion Update - Observer: Survivor, Subject: Trickster, Request ID: 8df59909-f1ae-476e-b6e5-31e790f41e47 (Request ID: 8df59909-f1ae-476e-b6e5-31e790f41e47)
+[16:15:26]     Opinion Update - Observer: Diplomat, Subject: Trickster, Request ID: 2011d47a-83e2-45ad-8487-ea43b07a5a0d (Request ID: 2011d47a-83e2-45ad-8487-ea43b07a5a0d)
+[16:15:26]     Opinion Update - Observer: Warrior, Subject: Trickster, Request ID: 0d9ce239-8c5c-465d-9836-94cb7a86e1c3 (Request ID: 0d9ce239-8c5c-465d-9836-94cb7a86e1c3)
+[16:15:26]     Opinion Update - Observer: Strategist, Subject: Survivor, Request ID: 3ad0f2bd-42d6-4f2a-a78c-6a998f2c6c80 (Request ID: 3ad0f2bd-42d6-4f2a-a78c-6a998f2c6c80)
+[16:15:26]     Opinion Update - Observer: Diplomat, Subject: Survivor, Request ID: 42a8b8af-ac72-4068-a191-470441d52f14 (Request ID: 42a8b8af-ac72-4068-a191-470441d52f14)

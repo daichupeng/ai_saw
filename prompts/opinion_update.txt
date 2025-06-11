@@ -13,16 +13,10 @@ Consider their action's impact on:
 - Their strategic thinking
 - Their personality traits
 
-Respond with a JSON object containing:
-1. "thinking": A detailed explanation of your analysis of their action and its impact on your relationship
-
-2. "content": An object with the following field:
-   - "opinion": A descriptive statement about your current opinion of the player
+Respond with a JSON object containing a single field:
+- "opinion": A detailed analysis of your current opinion of the player, including your reasoning and how it changed based on their action
 
 Example response format:
 {{
-  "thinking": "Their action shows a pattern of...",
-  "content": {{
-    "opinion": "A calculating player who prioritizes self-preservation over alliances..."
-  }}
+  "opinion": "A calculating player who prioritizes self-preservation over alliances. Their recent action of offering 2 damage shows a willingness to contribute, but the timing suggests they may be trying to build trust before a potential betrayal."
 }} 

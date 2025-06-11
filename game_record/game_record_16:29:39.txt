@@ -1,0 +1,319 @@
+[16:29:39] === AI SAW GAME RECORD ===
+[16:29:39] Game Description: A game of survival, negotiation, and betrayal.
+[16:29:39] 
+Initial Players:
+[16:29:39]   - Strategist:
+[16:29:39]     HP: 7
+[16:29:39]     Background: You are a calculating and strategic player who carefully analyzes each situation. You value information and try to predict others' moves. You prefer stable alliances but will betray if the odds are strongly in your favor.
+[16:29:39]     Backstab Success Rate: 30.0%
+[16:29:39]   - Survivor:
+[16:29:39]     HP: 7
+[16:29:39]     Background: You are a cautious player focused primarily on survival. You avoid conflict when possible and prefer to let others take risks. However, you can be ruthless if cornered.
+[16:29:39]     Backstab Success Rate: 30.0%
+[16:29:39]   - Diplomat:
+[16:29:39]     HP: 7
+[16:29:39]     Background: You are a charismatic negotiator who excels at building alliances. You try to maintain peace and coordinate group actions. You avoid betrayal unless absolutely necessary.
+[16:29:39]     Backstab Success Rate: 30.0%
+[16:29:39]   - Warrior:
+[16:29:39]     HP: 7
+[16:29:39]     Background: You are an aggressive and direct player who isn't afraid of conflict. You respect strength and honesty, despise cowardice, and prefer straightforward solutions.
+[16:29:39]     Backstab Success Rate: 30.0%
+[16:29:39]   - Trickster:
+[16:29:39]     HP: 7
+[16:29:39]     Background: You are an unpredictable player who enjoys creating chaos. You use misdirection and manipulation, making it hard for others to anticipate your moves.
+[16:29:39]     Backstab Success Rate: 30.0%
+[16:29:39] 
+==================================================
+
+[16:29:39] 
+🎲 ROUND 1
+[16:29:39]   Active Players:
+[16:29:39]     - Strategist (HP: 7)
+[16:29:39]     - Survivor (HP: 7)
+[16:29:39]     - Diplomat (HP: 7)
+[16:29:39]     - Warrior (HP: 7)
+[16:29:39]     - Trickster (HP: 7)
+[16:29:39] 
+💬 NEGOTIATION ATTEMPT 1
+[16:29:39]   Damage Required: 6
+[16:29:39]     Negotiation Action - Player: Warrior, Action: Kill (Request ID: 98027c96-61c6-4813-a034-c502441ea515)
+[16:29:39]       Target: Strategist (Request ID: 98027c96-61c6-4813-a034-c502441ea515)
+[16:29:39]     Opinion Update - Observer: Strategist, Subject: Warrior, Request ID: d0cbc463-c8f1-428e-84a2-95325d9c01db (Request ID: d0cbc463-c8f1-428e-84a2-95325d9c01db)
+[16:29:39]     Opinion Update - Observer: Survivor, Subject: Warrior, Request ID: c48e683e-ea1b-4c46-9296-f608beced689 (Request ID: c48e683e-ea1b-4c46-9296-f608beced689)
+[16:29:39]     Opinion Update - Observer: Diplomat, Subject: Warrior, Request ID: e5212094-f61e-452a-8ac3-5aea6a5d288e (Request ID: e5212094-f61e-452a-8ac3-5aea6a5d288e)
+[16:29:39]     Opinion Update - Observer: Trickster, Subject: Warrior, Request ID: 767d1862-44e8-440c-be07-1da2c1c8917d (Request ID: 767d1862-44e8-440c-be07-1da2c1c8917d)
+[16:29:39] ❌ Kill action failed: Warrior cannot kill Strategist (invalid HP condition)
+[16:29:39]   
+Negotiation Results:
+[16:29:39]     Total Damage Offered: 0/6
+[16:29:39]     - Warrior:
+[16:29:39]       Action: Kill
+[16:29:39]       Target: Strategist
+[16:29:39]       Speech: I despise long negotiations. Show me your strength or face the consequences. I choose to end this now!
+[16:29:39]   
+❌ Negotiation Failed - Starting Next Attempt
+[16:29:39] 
+💬 NEGOTIATION ATTEMPT 2
+[16:29:39]   Damage Required: 6
+[16:29:39]     Negotiation Action - Player: Warrior, Action: Kill (Request ID: 05149d6b-5fe1-49c5-8983-f9cc7cef2b4b)
+[16:29:39]       Target: Trickster (Request ID: 05149d6b-5fe1-49c5-8983-f9cc7cef2b4b)
+[16:29:39]     Opinion Update - Observer: Strategist, Subject: Warrior, Request ID: dcea50be-374b-430c-9208-df7012675530 (Request ID: dcea50be-374b-430c-9208-df7012675530)
+[16:29:39]     Opinion Update - Observer: Survivor, Subject: Warrior, Request ID: bf7fe57d-e20d-45cd-9f57-e0e6a39d5f34 (Request ID: bf7fe57d-e20d-45cd-9f57-e0e6a39d5f34)
+[16:29:39]     Opinion Update - Observer: Diplomat, Subject: Warrior, Request ID: 408061f4-4dae-49b3-b896-38dc779683e9 (Request ID: 408061f4-4dae-49b3-b896-38dc779683e9)
+[16:29:39]     Opinion Update - Observer: Trickster, Subject: Warrior, Request ID: dd2f4e26-10f4-4706-a310-69b9d8367b78 (Request ID: dd2f4e26-10f4-4706-a310-69b9d8367b78)
+[16:29:39] ❌ Kill action failed: Warrior cannot kill Trickster (invalid HP condition)
+[16:29:39]   
+Negotiation Results:
+[16:29:39]     Total Damage Offered: 0/6
+[16:29:39]     - Warrior:
+[16:29:39]       Action: Kill
+[16:29:39]       Target: Trickster
+[16:29:39]       Speech: I value strength and honesty above all. Trickster, your deceptive ways do not align with the warrior's code of honor. Prepare to face the consequences of your trickery.
+[16:29:39]   
+❌ Negotiation Failed - Starting Next Attempt
+[16:29:39] 
+💬 NEGOTIATION ATTEMPT 3
+[16:29:39]   Damage Required: 6
+[16:29:39]     Negotiation Action - Player: Warrior, Action: Offer (Request ID: 11d1c357-7da3-43e0-8746-988b471bb3da)
+[16:29:39]       Damage Amount: 2 (Request ID: 11d1c357-7da3-43e0-8746-988b471bb3da)
+[16:29:39]     Opinion Update - Observer: Strategist, Subject: Warrior, Request ID: d955f3ff-336a-470e-8f38-23b204d55734 (Request ID: d955f3ff-336a-470e-8f38-23b204d55734)
+[16:29:39]     Opinion Update - Observer: Survivor, Subject: Warrior, Request ID: c2d1ea78-907b-4d1b-ab83-0c2fc1a1e371 (Request ID: c2d1ea78-907b-4d1b-ab83-0c2fc1a1e371)
+[16:29:39]     Opinion Update - Observer: Diplomat, Subject: Warrior, Request ID: add6a2bf-326f-45f6-948a-c648086b47df (Request ID: add6a2bf-326f-45f6-948a-c648086b47df)
+[16:29:39]     Opinion Update - Observer: Trickster, Subject: Warrior, Request ID: b761b05c-d8b3-4880-bbab-76decfaf26c7 (Request ID: b761b05c-d8b3-4880-bbab-76decfaf26c7)
+[16:29:39]     Negotiation Action - Player: Trickster, Action: Offer (Request ID: e1e7225b-004b-4401-b018-63b23bebffea)
+[16:29:39]       Damage Amount: 1 (Request ID: e1e7225b-004b-4401-b018-63b23bebffea)
+[16:29:39]     Opinion Update - Observer: Strategist, Subject: Trickster, Request ID: d33f5181-23b0-4516-abb3-600cb6a1fa2c (Request ID: d33f5181-23b0-4516-abb3-600cb6a1fa2c)
+[16:29:39]     Opinion Update - Observer: Survivor, Subject: Trickster, Request ID: c5e8ead6-59ed-4c9a-b441-f0b94ed281f3 (Request ID: c5e8ead6-59ed-4c9a-b441-f0b94ed281f3)
+[16:29:39]     Opinion Update - Observer: Diplomat, Subject: Trickster, Request ID: f9e270e5-9d27-4ccd-a9b4-b782edde3600 (Request ID: f9e270e5-9d27-4ccd-a9b4-b782edde3600)
+[16:29:39]     Opinion Update - Observer: Warrior, Subject: Trickster, Request ID: b9e2013c-ca4c-4020-9088-0b35f793758e (Request ID: b9e2013c-ca4c-4020-9088-0b35f793758e)
+[16:29:39]     Negotiation Action - Player: Diplomat, Action: Offer (Request ID: c76f5937-5b04-4dc2-a701-3dab4c323b6c)
+[16:29:39]       Damage Amount: 2 (Request ID: c76f5937-5b04-4dc2-a701-3dab4c323b6c)
+[16:29:39]     Opinion Update - Observer: Strategist, Subject: Diplomat, Request ID: 2fea0ffc-9902-45e0-81d0-7b93d76f1739 (Request ID: 2fea0ffc-9902-45e0-81d0-7b93d76f1739)
+[16:29:39]     Opinion Update - Observer: Survivor, Subject: Diplomat, Request ID: 19e9886d-ff98-4498-868b-84f5a50cf4dc (Request ID: 19e9886d-ff98-4498-868b-84f5a50cf4dc)
+[16:29:39]     Opinion Update - Observer: Warrior, Subject: Diplomat, Request ID: 14e1c96f-c6f9-4a41-b15f-a22dbee28288 (Request ID: 14e1c96f-c6f9-4a41-b15f-a22dbee28288)
+[16:29:39]     Opinion Update - Observer: Trickster, Subject: Diplomat, Request ID: 447ccc2e-9a7b-4eb1-8f8e-7f2a5d66a480 (Request ID: 447ccc2e-9a7b-4eb1-8f8e-7f2a5d66a480)
+[16:29:39]     Negotiation Action - Player: Strategist, Action: Offer (Request ID: 00e06fe8-f33a-40d6-8d49-69c47b44317b)
+[16:29:39]       Damage Amount: 2 (Request ID: 00e06fe8-f33a-40d6-8d49-69c47b44317b)
+[16:29:39]     Opinion Update - Observer: Survivor, Subject: Strategist, Request ID: a0d19efc-6604-4e09-a667-3c4107d4bdcf (Request ID: a0d19efc-6604-4e09-a667-3c4107d4bdcf)
+[16:29:39]     Opinion Update - Observer: Diplomat, Subject: Strategist, Request ID: 1e0a76fa-f6c5-4daa-8904-72ffe5e88f5c (Request ID: 1e0a76fa-f6c5-4daa-8904-72ffe5e88f5c)
+[16:29:39]     Opinion Update - Observer: Warrior, Subject: Strategist, Request ID: b2e8e1b0-e506-487d-aba9-f21dc61548ab (Request ID: b2e8e1b0-e506-487d-aba9-f21dc61548ab)
+[16:29:39]     Opinion Update - Observer: Trickster, Subject: Strategist, Request ID: 74c16493-0345-488a-a5c4-c01558a72d3b (Request ID: 74c16493-0345-488a-a5c4-c01558a72d3b)
+[16:29:39]     Negotiation Action - Player: Survivor, Action: Offer (Request ID: 4da777f3-9f43-4b47-a3e2-a330b3043be0)
+[16:29:39]       Damage Amount: 2 (Request ID: 4da777f3-9f43-4b47-a3e2-a330b3043be0)
+[16:29:39]     Opinion Update - Observer: Strategist, Subject: Survivor, Request ID: e36fc661-bb81-4e35-bbee-3f65d2ad08c0 (Request ID: e36fc661-bb81-4e35-bbee-3f65d2ad08c0)
+[16:29:39]     Opinion Update - Observer: Diplomat, Subject: Survivor, Request ID: b40f9741-9d9b-482b-9c9c-c22958d80363 (Request ID: b40f9741-9d9b-482b-9c9c-c22958d80363)
+[16:29:39]     Opinion Update - Observer: Warrior, Subject: Survivor, Request ID: 7bc49918-fd03-4326-8976-b6c0326c24be (Request ID: 7bc49918-fd03-4326-8976-b6c0326c24be)
+[16:29:39]     Opinion Update - Observer: Trickster, Subject: Survivor, Request ID: d69ccd7c-9738-488f-a8c7-90e1f98f760e (Request ID: d69ccd7c-9738-488f-a8c7-90e1f98f760e)
+[16:29:39]   
+Negotiation Results:
+[16:29:39]     Total Damage Offered: 9/6
+[16:29:39]     - Warrior:
+[16:29:39]       Action: Offer
+[16:29:39]       Damage: 2
+[16:29:39]       Speech: I respect those who show strength and honesty. I will offer to take 2 HP damage to move this negotiation forward. Let's show our true intentions and resolve this round quickly.
+[16:29:39]     - Trickster:
+[16:29:39]       Action: Offer
+[16:29:39]       Damage: 1
+[16:29:39]       Speech: In the twisted dance of this game, let us each make a small sacrifice to keep the shadows at bay. My offer of 1 HP is but a whisper of what lies beneath the surface. Will you follow suit, or will the shadows find a new home among us?
+[16:29:39]     - Diplomat:
+[16:29:39]       Action: Offer
+[16:29:39]       Damage: 2
+[16:29:39]       Speech: Fellow players, in the spirit of unity and cooperation, I offer to take 2 HP damage to advance towards our common goal of reaching the required total. Let us stand together and demonstrate our commitment to each other's survival in this treacherous game.
+[16:29:39]     - Strategist:
+[16:29:39]       Action: Offer
+[16:29:39]       Damage: 2
+[16:29:39]       Speech: Fellow players, let us unite to overcome this challenge together. I offer to take 2 HP damage in the spirit of cooperation and progress towards our common goal. Let's show our commitment to survival and ensure we meet the required total to advance safely.
+[16:29:39]     - Survivor:
+[16:29:39]       Action: Offer
+[16:29:39]       Damage: 2
+[16:29:39]       Speech: In this precarious game of survival, I am willing to offer 2 HP as a gesture of cooperation towards our collective goal. Let us continue to work together to navigate this challenge and ensure our mutual survival.
+[16:29:39]   
+✅ Negotiation Successful - Moving to Execution Phase
+[16:29:39] 
+⚔️ EXECUTION PHASE
+[16:29:39]   Initial State:
+[16:29:39]     - Strategist: HP=7, Promised Damage=2
+[16:29:39]     - Survivor: HP=7, Promised Damage=2
+[16:29:39]     - Diplomat: HP=7, Promised Damage=2
+[16:29:39]     - Warrior: HP=7, Promised Damage=2
+[16:29:39]     - Trickster: HP=7, Promised Damage=1
+[16:29:39]     Backstab Decision - Player: Strategist (Request ID: f4227d48-d348-488e-8667-a96c5b331fc2)
+[16:29:39]       Decision: Will Not Backstab (Request ID: f4227d48-d348-488e-8667-a96c5b331fc2)
+[16:29:39]     Strategist chose not to backstab (Request ID: f4227d48-d348-488e-8667-a96c5b331fc2)
+[16:29:39]     Backstab Decision - Player: Survivor (Request ID: a90e90ec-5e61-4d32-934a-f7a9112299a0)
+[16:29:39]       Decision: Will Not Backstab (Request ID: a90e90ec-5e61-4d32-934a-f7a9112299a0)
+[16:29:39]     Survivor chose not to backstab (Request ID: a90e90ec-5e61-4d32-934a-f7a9112299a0)
+[16:29:39]     Backstab Decision - Player: Diplomat (Request ID: a5eeacf7-22de-4fb0-8d10-23f4a5978344)
+[16:29:39]       Decision: Will Not Backstab (Request ID: a5eeacf7-22de-4fb0-8d10-23f4a5978344)
+[16:29:39]     Diplomat chose not to backstab (Request ID: a5eeacf7-22de-4fb0-8d10-23f4a5978344)
+[16:29:39]     Backstab Decision - Player: Trickster (Request ID: 1bc97339-8c1e-4ecb-bec3-0cebcdec062c)
+[16:29:39]       Decision: Will Not Backstab (Request ID: 1bc97339-8c1e-4ecb-bec3-0cebcdec062c)
+[16:29:39]     Trickster chose not to backstab (Request ID: 1bc97339-8c1e-4ecb-bec3-0cebcdec062c)
+[16:29:39]     Backstab Decision - Player: Warrior (Request ID: e5f61cbb-1d4e-4c6a-a3e2-247d462835f1)
+[16:29:39]       Decision: Will Not Backstab (Request ID: e5f61cbb-1d4e-4c6a-a3e2-247d462835f1)
+[16:29:39]     Warrior chose not to backstab (Request ID: e5f61cbb-1d4e-4c6a-a3e2-247d462835f1)
+[16:29:39]     Opinion Update - Observer: Survivor, Subject: Strategist, Request ID: 3616d017-a4a3-4c1a-a28a-2518abf1fc90 (Request ID: 3616d017-a4a3-4c1a-a28a-2518abf1fc90)
+[16:29:39]     Opinion Update - Observer: Diplomat, Subject: Strategist, Request ID: e649321a-81e1-47df-ba54-a0c6ac9c536b (Request ID: e649321a-81e1-47df-ba54-a0c6ac9c536b)
+[16:29:39]     Opinion Update - Observer: Warrior, Subject: Strategist, Request ID: 42ca96ed-9c48-41dd-b496-ea767efd51b8 (Request ID: 42ca96ed-9c48-41dd-b496-ea767efd51b8)
+[16:29:39]     Opinion Update - Observer: Trickster, Subject: Strategist, Request ID: 05e4d257-66e3-4241-a425-9a812923db0a (Request ID: 05e4d257-66e3-4241-a425-9a812923db0a)
+[16:29:39]     Opinion Update - Observer: Strategist, Subject: Survivor, Request ID: 22be0b25-8d92-4c72-91ff-d25c8136420d (Request ID: 22be0b25-8d92-4c72-91ff-d25c8136420d)
+[16:29:39]     Opinion Update - Observer: Diplomat, Subject: Survivor, Request ID: 33c97726-1021-4cdf-9a4b-a055181786c6 (Request ID: 33c97726-1021-4cdf-9a4b-a055181786c6)
+[16:29:39]     Opinion Update - Observer: Warrior, Subject: Survivor, Request ID: e0855295-f9e6-44dd-90c6-be2a4e28c68f (Request ID: e0855295-f9e6-44dd-90c6-be2a4e28c68f)
+[16:29:39]     Opinion Update - Observer: Trickster, Subject: Survivor, Request ID: 84111f21-eb6c-4545-83f1-9b7bd7e9b57a (Request ID: 84111f21-eb6c-4545-83f1-9b7bd7e9b57a)
+[16:29:39]     Opinion Update - Observer: Strategist, Subject: Diplomat, Request ID: 529c6010-d6ca-4224-a05b-93d01429217f (Request ID: 529c6010-d6ca-4224-a05b-93d01429217f)
+[16:29:39]     Opinion Update - Observer: Survivor, Subject: Diplomat, Request ID: c3d37e15-cd79-4e75-8aa5-8ad546758b4a (Request ID: c3d37e15-cd79-4e75-8aa5-8ad546758b4a)
+[16:29:39]     Opinion Update - Observer: Warrior, Subject: Diplomat, Request ID: 2689c5e1-befc-469f-a1f2-5baffd5c6b0d (Request ID: 2689c5e1-befc-469f-a1f2-5baffd5c6b0d)
+[16:29:39]     Opinion Update - Observer: Trickster, Subject: Diplomat, Request ID: 44a80c60-9644-439a-8c59-3633641f1da4 (Request ID: 44a80c60-9644-439a-8c59-3633641f1da4)
+[16:29:39]     Opinion Update - Observer: Strategist, Subject: Warrior, Request ID: 9454b2c7-bbce-4d74-b92b-817698dcc6d0 (Request ID: 9454b2c7-bbce-4d74-b92b-817698dcc6d0)
+[16:29:39]     Opinion Update - Observer: Survivor, Subject: Warrior, Request ID: 3c19d373-35f5-41ba-9dbb-2d003fe39886 (Request ID: 3c19d373-35f5-41ba-9dbb-2d003fe39886)
+[16:29:39]     Opinion Update - Observer: Diplomat, Subject: Warrior, Request ID: c3d19ab4-887f-405c-978d-62e1512198bf (Request ID: c3d19ab4-887f-405c-978d-62e1512198bf)
+[16:29:39]     Opinion Update - Observer: Trickster, Subject: Warrior, Request ID: 8cbb2d29-8432-4bc4-a699-271e7c465806 (Request ID: 8cbb2d29-8432-4bc4-a699-271e7c465806)
+[16:29:39]     Opinion Update - Observer: Strategist, Subject: Trickster, Request ID: b3fd8299-c122-47fb-911a-b804a448444e (Request ID: b3fd8299-c122-47fb-911a-b804a448444e)
+[16:29:39]     Opinion Update - Observer: Survivor, Subject: Trickster, Request ID: ca377826-99bf-42c2-9e63-1980b11aadd1 (Request ID: ca377826-99bf-42c2-9e63-1980b11aadd1)
+[16:29:39]     Opinion Update - Observer: Diplomat, Subject: Trickster, Request ID: 8a524482-6716-4a97-9aca-24c0afe2f33a (Request ID: 8a524482-6716-4a97-9aca-24c0afe2f33a)
+[16:29:39]     Opinion Update - Observer: Warrior, Subject: Trickster, Request ID: 5003dde0-c82c-4c73-8925-8639094fc9ba (Request ID: 5003dde0-c82c-4c73-8925-8639094fc9ba)
+[16:29:39]   
+Execution Results:
+[16:29:39]     - Strategist:
+[16:29:39]       Final HP: 5
+[16:29:39]       Damage Taken: 2
+[16:29:39]       Status: Survived
+[16:29:39]     - Survivor:
+[16:29:39]       Final HP: 5
+[16:29:39]       Damage Taken: 2
+[16:29:39]       Status: Survived
+[16:29:39]     - Diplomat:
+[16:29:39]       Final HP: 5
+[16:29:39]       Damage Taken: 2
+[16:29:39]       Status: Survived
+[16:29:39]     - Trickster:
+[16:29:39]       Final HP: 6
+[16:29:39]       Damage Taken: 1
+[16:29:39]       Status: Survived
+[16:29:39]     - Warrior:
+[16:29:39]       Final HP: 5
+[16:29:39]       Damage Taken: 2
+[16:29:39]       Status: Survived
+[16:29:39] 
+📊 END OF ROUND SUMMARY
+[16:29:39]   Player Status:
+[16:29:39]     - Strategist:
+[16:29:39]       HP: 5
+[16:29:39]       Status: Active
+[16:29:39]       Backstab Attempts: 0
+[16:29:39]     - Survivor:
+[16:29:39]       HP: 5
+[16:29:39]       Status: Active
+[16:29:39]       Backstab Attempts: 0
+[16:29:39]     - Diplomat:
+[16:29:39]       HP: 5
+[16:29:39]       Status: Active
+[16:29:39]       Backstab Attempts: 0
+[16:29:39]     - Warrior:
+[16:29:39]       HP: 5
+[16:29:39]       Status: Active
+[16:29:39]       Backstab Attempts: 0
+[16:29:39]     - Trickster:
+[16:29:39]       HP: 6
+[16:29:39]       Status: Active
+[16:29:39]       Backstab Attempts: 0
+[16:29:39] 
+==================================================
+
+[16:29:39] 
+🎲 ROUND 2
+[16:29:39]   Active Players:
+[16:29:39]     - Strategist (HP: 5)
+[16:29:39]     - Survivor (HP: 5)
+[16:29:39]     - Diplomat (HP: 5)
+[16:29:39]     - Warrior (HP: 5)
+[16:29:39]     - Trickster (HP: 6)
+[16:29:39] 
+💬 NEGOTIATION ATTEMPT 1
+[16:29:39]   Damage Required: 6
+[16:29:39]     Negotiation Action - Player: Strategist, Action: Kill (Request ID: 43815a48-24ec-4cf2-9fbe-e72391d8fbaa)
+[16:29:39]       Target: Trickster (Request ID: 43815a48-24ec-4cf2-9fbe-e72391d8fbaa)
+[16:29:39]     Opinion Update - Observer: Survivor, Subject: Strategist, Request ID: 320feb21-1c62-4421-a09d-6fa77fbb5358 (Request ID: 320feb21-1c62-4421-a09d-6fa77fbb5358)
+[16:29:39]     Opinion Update - Observer: Diplomat, Subject: Strategist, Request ID: ca5db82c-8130-446d-a642-853d5a940091 (Request ID: ca5db82c-8130-446d-a642-853d5a940091)
+[16:29:39]     Opinion Update - Observer: Warrior, Subject: Strategist, Request ID: 53a85537-4e53-49d6-a0f8-070b4b5a3c6a (Request ID: 53a85537-4e53-49d6-a0f8-070b4b5a3c6a)
+[16:29:39]     Opinion Update - Observer: Trickster, Subject: Strategist, Request ID: f23a56e9-0a3d-453a-9dc6-0813cd0e56ff (Request ID: f23a56e9-0a3d-453a-9dc6-0813cd0e56ff)
+[16:29:39] ❌ Kill action failed: Strategist cannot kill Trickster (invalid HP condition)
+[16:29:39]   
+Negotiation Results:
+[16:29:39]     Total Damage Offered: 0/6
+[16:29:39]     - Strategist:
+[16:29:39]       Action: Kill
+[16:29:39]       Target: Trickster
+[16:29:39]       Speech: Survival in this game demands tough decisions. I choose to eliminate Trickster for the greater good.
+[16:29:39]   
+❌ Negotiation Failed - Starting Next Attempt
+[16:29:39] 
+💬 NEGOTIATION ATTEMPT 2
+[16:29:39]   Damage Required: 6
+[16:29:39]     Negotiation Action - Player: Strategist, Action: Offer (Request ID: da6c710e-3947-4fa5-87b1-9b2c9d71f8b9)
+[16:29:39]       Damage Amount: 2 (Request ID: da6c710e-3947-4fa5-87b1-9b2c9d71f8b9)
+[16:29:39]     Opinion Update - Observer: Survivor, Subject: Strategist, Request ID: 0efad6ef-84c1-41b5-b289-34f42a09457c (Request ID: 0efad6ef-84c1-41b5-b289-34f42a09457c)
+[16:29:39]     Opinion Update - Observer: Diplomat, Subject: Strategist, Request ID: 1ae5bc0d-c645-4979-b070-dbc5423d5f9c (Request ID: 1ae5bc0d-c645-4979-b070-dbc5423d5f9c)
+[16:29:39]     Opinion Update - Observer: Warrior, Subject: Strategist, Request ID: 66943ca0-d267-4a2d-aeff-dd2f82556eee (Request ID: 66943ca0-d267-4a2d-aeff-dd2f82556eee)
+[16:29:39]     Opinion Update - Observer: Trickster, Subject: Strategist, Request ID: 09ccdf44-9795-4128-b02d-40246b7c1818 (Request ID: 09ccdf44-9795-4128-b02d-40246b7c1818)
+[16:29:39]     Negotiation Action - Player: Survivor, Action: Offer (Request ID: 4b75cb35-38e9-4a09-ae1b-2b71a9f1b3cc)
+[16:29:39]       Damage Amount: 2 (Request ID: 4b75cb35-38e9-4a09-ae1b-2b71a9f1b3cc)
+[16:29:39]     Opinion Update - Observer: Strategist, Subject: Survivor, Request ID: 5f47ec34-27f8-443a-acd7-c6e3c5b89bb4 (Request ID: 5f47ec34-27f8-443a-acd7-c6e3c5b89bb4)
+[16:29:39]     Opinion Update - Observer: Diplomat, Subject: Survivor, Request ID: 396644e8-4f60-4ed4-aaad-b93379ca48aa (Request ID: 396644e8-4f60-4ed4-aaad-b93379ca48aa)
+[16:29:39]     Opinion Update - Observer: Warrior, Subject: Survivor, Request ID: 24affd22-ba37-4658-ba11-a9dd3a579371 (Request ID: 24affd22-ba37-4658-ba11-a9dd3a579371)
+[16:29:39]     Opinion Update - Observer: Trickster, Subject: Survivor, Request ID: 2bd821c3-09f6-42d5-aeff-436636ecbb0a (Request ID: 2bd821c3-09f6-42d5-aeff-436636ecbb0a)
+[16:29:39]     Negotiation Action - Player: Diplomat, Action: Offer (Request ID: 2c96459e-4e79-42df-9ef0-3eb9d58b5cf9)
+[16:29:39]       Damage Amount: 2 (Request ID: 2c96459e-4e79-42df-9ef0-3eb9d58b5cf9)
+[16:29:39]     Opinion Update - Observer: Strategist, Subject: Diplomat, Request ID: 71b05b21-51d4-4a67-8576-dd6b411843aa (Request ID: 71b05b21-51d4-4a67-8576-dd6b411843aa)
+[16:29:39]     Opinion Update - Observer: Survivor, Subject: Diplomat, Request ID: 0dff11c2-2d9f-4667-9e04-41171d36e617 (Request ID: 0dff11c2-2d9f-4667-9e04-41171d36e617)
+[16:29:39]     Opinion Update - Observer: Warrior, Subject: Diplomat, Request ID: 3c009137-a7d2-47f0-bfcb-7efcc2caa26f (Request ID: 3c009137-a7d2-47f0-bfcb-7efcc2caa26f)
+[16:29:39]     Opinion Update - Observer: Trickster, Subject: Diplomat, Request ID: e120d8b1-dfbb-439a-801c-6f2875e32a4c (Request ID: e120d8b1-dfbb-439a-801c-6f2875e32a4c)
+[16:29:39]     Negotiation Action - Player: Warrior, Action: Kill (Request ID: cf6479f6-f27b-4c76-8c11-06977ac64a44)
+[16:29:39]       Target: Diplomat (Request ID: cf6479f6-f27b-4c76-8c11-06977ac64a44)
+[16:29:39]     Opinion Update - Observer: Strategist, Subject: Warrior, Request ID: f0328d00-524d-42b7-8ab9-f64c1e04ba1e (Request ID: f0328d00-524d-42b7-8ab9-f64c1e04ba1e)
+[16:29:39]     Opinion Update - Observer: Survivor, Subject: Warrior, Request ID: c445e499-dbbf-4b74-91fe-32b43a012c0c (Request ID: c445e499-dbbf-4b74-91fe-32b43a012c0c)
+[16:29:39]     Opinion Update - Observer: Diplomat, Subject: Warrior, Request ID: 3a7801ad-0168-49fc-a451-4e1e720a8a67 (Request ID: 3a7801ad-0168-49fc-a451-4e1e720a8a67)
+[16:29:39]     Opinion Update - Observer: Trickster, Subject: Warrior, Request ID: 4bc7f2fc-fa74-492c-b823-3935b9dae44b (Request ID: 4bc7f2fc-fa74-492c-b823-3935b9dae44b)
+[16:29:39] ❌ Kill action failed: Warrior cannot kill Diplomat (invalid HP condition)
+[16:29:39]   
+Negotiation Results:
+[16:29:39]     Total Damage Offered: 6/6
+[16:29:39]     - Strategist:
+[16:29:39]       Action: Offer
+[16:29:39]       Damage: 2
+[16:29:39]       Speech: I am willing to offer 2 HP damage to help us reach the required total. Let's work together towards our common goal of survival.
+[16:29:39]     - Survivor:
+[16:29:39]       Action: Offer
+[16:29:39]       Damage: 2
+[16:29:39]       Speech: I see the importance of reaching our target this round to ensure our collective survival. I'm willing to offer 2 HP damage to assist in achieving our goal and demonstrate my commitment to cooperation. Let's work together towards securing our survival in this game.
+[16:29:39]     - Diplomat:
+[16:29:39]       Action: Offer
+[16:29:39]       Damage: 2
+[16:29:39]       Speech: Fellow players, I am willing to offer 2 HP damage to contribute towards our common target of 6 HP. Let us continue to work together and demonstrate our commitment to collaboration and collective survival. By staying united, we increase our chances of overcoming challenges and emerging stronger in this game.
+[16:29:39]     - Warrior:
+[16:29:39]       Action: Kill
+[16:29:39]       Target: Diplomat
+[16:29:39]       Speech: In this game, strength and honesty are crucial. Diplomat, your repeated failure to meet the required damage brings doubt to your reliability. I value directness and integrity, and I must eliminate any potential threats to our survival. I choose to take the lead in this round and ensure that our path to victory is clear. This is a demonstration of strength and a commitment to straightforward solutions.
+[16:29:39]   
+❌ Negotiation Failed - Starting Next Attempt
+[16:29:39] 
+💬 NEGOTIATION ATTEMPT 3
+[16:29:39]   Damage Required: 6
+[16:29:39]     Negotiation Action - Player: Strategist, Action: Offer (Request ID: c4bb4aa3-5bcf-4d94-a7a3-3e25a6bf4bcb)
+[16:29:39]       Damage Amount: 3 (Request ID: c4bb4aa3-5bcf-4d94-a7a3-3e25a6bf4bcb)
+[16:29:39]     Opinion Update - Observer: Survivor, Subject: Strategist, Request ID: 471c3500-3e55-4dd2-9f69-2dc165c63f38 (Request ID: 471c3500-3e55-4dd2-9f69-2dc165c63f38)
+[16:29:39]     Opinion Update - Observer: Diplomat, Subject: Strategist, Request ID: 32312464-e5c9-4c78-9d31-2cab31065759 (Request ID: 32312464-e5c9-4c78-9d31-2cab31065759)
+[16:29:39]     Opinion Update - Observer: Warrior, Subject: Strategist, Request ID: bb8801c8-b3a1-4cc3-bef6-a96cc02eb9b3 (Request ID: bb8801c8-b3a1-4cc3-bef6-a96cc02eb9b3)
+[16:29:39]     Opinion Update - Observer: Trickster, Subject: Strategist, Request ID: eb59a625-f2db-454e-9153-42dc00547719 (Request ID: eb59a625-f2db-454e-9153-42dc00547719)
+[16:29:39]     Negotiation Action - Player: Survivor, Action: Offer (Request ID: d677d755-4894-428d-b559-887a6f917afb)
+[16:29:39]       Damage Amount: 1 (Request ID: d677d755-4894-428d-b559-887a6f917afb)
+[16:29:39]     Opinion Update - Observer: Strategist, Subject: Survivor, Request ID: e8e589a0-eb4f-4078-95a3-21bd6e9612d8 (Request ID: e8e589a0-eb4f-4078-95a3-21bd6e9612d8)
+[16:29:39]     Opinion Update - Observer: Diplomat, Subject: Survivor, Request ID: 11f66003-3c95-4243-90f1-06bd4488fad1 (Request ID: 11f66003-3c95-4243-90f1-06bd4488fad1)
+[16:29:39]     Opinion Update - Observer: Warrior, Subject: Survivor, Request ID: e4a9e5e8-9175-4974-9527-9412e3e67b8a (Request ID: e4a9e5e8-9175-4974-9527-9412e3e67b8a)
+[16:29:39]     Opinion Update - Observer: Trickster, Subject: Survivor, Request ID: c572f51c-3d75-498f-a781-9fc068d69101 (Request ID: c572f51c-3d75-498f-a781-9fc068d69101)
+[16:29:39]     Negotiation Action - Player: Diplomat, Action: Offer (Request ID: 1ebc507d-aa90-4a5c-ab43-16fca8b325bd)
+[16:29:39]       Damage Amount: 2 (Request ID: 1ebc507d-aa90-4a5c-ab43-16fca8b325bd)
+[16:29:39]     Opinion Update - Observer: Strategist, Subject: Diplomat, Request ID: 952fa664-b226-40dc-a153-7d750f7a2b00 (Request ID: 952fa664-b226-40dc-a153-7d750f7a2b00)
+[16:29:39]     Opinion Update - Observer: Survivor, Subject: Diplomat, Request ID: 9ee1c976-c8cf-44fa-83e0-e50bcbecdf85 (Request ID: 9ee1c976-c8cf-44fa-83e0-e50bcbecdf85)
+[16:29:39]     Opinion Update - Observer: Warrior, Subject: Diplomat, Request ID: 934f9b84-4439-476d-aec9-369b8e68a4df (Request ID: 934f9b84-4439-476d-aec9-369b8e68a4df)
+[16:29:39]     Opinion Update - Observer: Trickster, Subject: Diplomat, Request ID: 240a7383-85df-472b-b5fc-6d97374f6465 (Request ID: 240a7383-85df-472b-b5fc-6d97374f6465)

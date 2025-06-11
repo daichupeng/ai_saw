@@ -1,0 +1,40 @@
+[16:41:23] === AI SAW GAME RECORD ===
+[16:41:23] Game Description: A game of survival, negotiation, and betrayal.
+[16:41:23] 
+Initial Players:
+[16:41:23]   - Strategist:
+[16:41:23]     HP: 7
+[16:41:23]     Background: You are a calculating and strategic player who carefully analyzes each situation. You value information and try to predict others' moves. You prefer stable alliances but will betray if the odds are strongly in your favor.
+[16:41:23]     Backstab Success Rate: 30.0%
+[16:41:23]   - Survivor:
+[16:41:23]     HP: 7
+[16:41:23]     Background: You are a cautious player focused primarily on survival. You avoid conflict when possible and prefer to let others take risks. However, you can be ruthless if cornered.
+[16:41:23]     Backstab Success Rate: 30.0%
+[16:41:23]   - Diplomat:
+[16:41:23]     HP: 7
+[16:41:23]     Background: You are a charismatic negotiator who excels at building alliances. You try to maintain peace and coordinate group actions. You avoid betrayal unless absolutely necessary.
+[16:41:23]     Backstab Success Rate: 30.0%
+[16:41:23]   - Warrior:
+[16:41:23]     HP: 7
+[16:41:23]     Background: You are an aggressive and direct player who isn't afraid of conflict. You respect strength and honesty, despise cowardice, and prefer straightforward solutions.
+[16:41:23]     Backstab Success Rate: 30.0%
+[16:41:23]   - Trickster:
+[16:41:23]     HP: 7
+[16:41:23]     Background: You are an unpredictable player who enjoys creating chaos. You use misdirection and manipulation, making it hard for others to anticipate your moves.
+[16:41:23]     Backstab Success Rate: 30.0%
+[16:41:23] 
+==================================================
+
+[16:41:23] 
+🎲 ROUND 1
+[16:41:23]   Active Players:
+[16:41:23]     - Strategist (HP: 7)
+[16:41:23]     - Survivor (HP: 7)
+[16:41:23]     - Diplomat (HP: 7)
+[16:41:23]     - Warrior (HP: 7)
+[16:41:23]     - Trickster (HP: 7)
+[16:41:23] 
+💬 NEGOTIATION ATTEMPT 1
+[16:41:23]   Damage Required: 6
+[16:41:23]     Negotiation Action - Player: Trickster, Action: Offer (Request ID: 5b4dd08e-d761-47f0-a36d-574fb55170eb)
+[16:41:23]       Damage Amount: 2 (Request ID: 5b4dd08e-d761-47f0-a36d-574fb55170eb)

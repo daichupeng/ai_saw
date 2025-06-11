@@ -16,6 +16,7 @@ class PlayerAction:
     target_player: Optional[str] = None  # For Kill action
     thinking: str = ""
     speech: str = ""
+    request_id: Optional[str] = None  # Request ID from LLM response
 
 @dataclass
 class Player:
@@ -83,7 +84,7 @@ class Player:
         self.hp = max(0, self.hp - amount)
         return self.hp == 0
     
-    def update_opinion(self, player_name: str, action_type: str, context: Dict) -> None:
+    def update_opinion(self, player_name: str, action_type: str, context: Dict) -> Tuple[str, str, str, str]:
         """
         Update opinion about another player based on their actions.
         
@@ -91,6 +92,13 @@ class Player:
             player_name: Name of the player to update opinion about
             action_type: Type of action they took
             context: Additional context about the action
+            
+        Returns:
+            Tuple[str, str, str, str]: (observer_name, subject_name, opinion, request_id)
+            - observer_name: Name of the player making the observation
+            - subject_name: Name of the player being observed
+            - opinion: The updated opinion content
+            - request_id: The unique identifier for this opinion update request
         """
         prompt = self._prompt_templates["opinion_update"].format(
             name=self.name,
@@ -101,22 +109,9 @@ class Player:
             current_opinion=self.opinions.get(player_name, "No previous opinion")
         )
         
-        # Print raw prompt
-        print("\n📤 Sending Opinion Update Prompt:")
-        print("=" * 50)
-        print(prompt)
-        print("=" * 50)
-        
         response = self._llm_client.get_response(prompt)
         
-        # Print raw response
-        print("\n📥 Received Opinion Update Response:")
-        print("=" * 50)
-        print(f"Thinking: {response.thinking}")
-        print(f"Content: {response.content}")
-        print("=" * 50)
-        
-        # Extract opinion from response
+        opinion = ""
         try:
             # First try to parse the content as JSON
             if isinstance(response.content, str):
@@ -125,10 +120,7 @@ class Player:
                 content = response.content
                 
             # Extract the opinion from the content
-            if isinstance(content, dict) and "content" in content:
-                opinion = content["content"].get("opinion")
-            else:
-                opinion = content.get("opinion")
+            opinion = content.get("opinion", "")
                 
             # Update the opinion if we found one
             if opinion:
@@ -140,10 +132,7 @@ class Player:
                     self._current_test_log.append({
                         "stage": "Opinion Update Response",
                         "description": "Successfully parsed and stored opinion",
-                        "raw_response": {
-                            "thinking": response.thinking,
-                            "content": response.content
-                        },
+                        "raw_response": response.content,
                         "parsed_opinion": opinion
                     })
             else:
@@ -153,14 +142,20 @@ class Player:
             print(f"\n⚠️ Failed to parse JSON response: {str(e)}")
             # Fallback to using the entire content as the opinion
             if response.content:
-                self.opinions[player_name] = response.content.strip()
-                print(f"\n💭 Stored raw content as opinion: {self.opinions[player_name]}")
+                opinion = response.content.strip()
+                self.opinions[player_name] = opinion
+                print(f"\n💭 Stored raw content as opinion: {opinion}")
         except Exception as e:
             print(f"\n❌ Error updating opinion: {str(e)}")
             # Store the raw content as opinion in case of other errors
             if response.content:
-                self.opinions[player_name] = response.content.strip()
-                print(f"\n💭 Stored raw content as opinion due to error: {self.opinions[player_name]}")
+                opinion = response.content.strip()
+                self.opinions[player_name] = opinion
+                print(f"\n💭 Stored raw content as opinion due to error: {opinion}")
+            else:
+                opinion = "Error forming opinion"
+        
+        return self.name, player_name, opinion, response.request_id
     
     def negotiate(self, game_state: Dict) -> PlayerAction:
         """
@@ -203,26 +198,22 @@ class Player:
         # Get response from LLM
         response = self._llm_client.get_response(prompt)
         
-        # Print raw response
+        # Print raw response with request ID
         print("\n📥 Received Negotiation Response:")
-        print(f"response: {response}")
-        # print("=" * 50)
-        # print(f"Thinking: {response.thinking}")
-        # print(f"Content: {response.content}")
-        # print("=" * 50)
+        print(f"Request ID: {response.request_id}")
+        print(f"Response: {response}")
         
         # Parse the response into a PlayerAction
-        return self._parse_negotiation_response(response, game_state)
+        action = self._parse_negotiation_response(response, game_state)
+        action.request_id = response.request_id
+        return action
     
-    def decide_backstab(self, game_state: Dict) -> Tuple[bool, str]:
+    def decide_backstab(self, game_state: Dict) -> Tuple[bool, str, str]:
         """
         Decide whether to attempt a backstab during execution phase.
         
-        Args:
-            game_state: Current state of the game
-            
         Returns:
-            Tuple[bool, str]: (backstab decision, thinking process)
+            Tuple[bool, str, str]: (backstab decision, thinking process, request_id)
         """
         prompt = self._prompt_templates["backstab"].format(
             name=self.name,
@@ -242,87 +233,71 @@ class Player:
         
         response = self._llm_client.get_response(prompt)
         
-        # Print raw response
+        # Print raw response with request ID
         print("\n📥 Received Backstab Decision Response:")
-        print(f"response: {response}")
-        # print("=" * 50)
-        # print(f"Thinking: {response.thinking}")
-        # print(f"Content: {response.content}")
-        # print("=" * 50)
+        print(f"Request ID: {response.request_id}")
+        print(f"Response: {response}")
         
         try:
-            # Parse the JSON response
-            resp_json = json.loads(response.content)
-            content = resp_json.get("content", {})
+            # Handle both string and dictionary content
+            content = response.content
+            if isinstance(content, str):
+                try:
+                    content = json.loads(content)
+                except json.JSONDecodeError:
+                    # Fallback to simple text parsing
+                    decision = content.strip().lower() == "true"
+                    return decision, response.thinking, response.request_id
             
-            # Get decision and thinking
-            decision = content.get("decision", False)
-            thinking = resp_json.get("thinking", response.thinking)
+            # At this point content should be a dictionary
+            decision = content.get("content", {}).get("decision", False)
+            thinking = content.get("thinking", response.thinking)
             
-            return decision, thinking
+            return decision, thinking, response.request_id
             
-        except json.JSONDecodeError:
-            print("Warning: Failed to parse JSON response, falling back to text parsing")
-            # Fallback to simple text parsing
-            try:
-                decision = response.content.strip().lower() == "true"
-                return decision, response.thinking
-            except Exception:
-                return False, "Error in decision making, choosing not to backstab."
+        except Exception as e:
+            print(f"Error parsing backstab decision: {e}")
+            return False, "Error in decision making, choosing not to backstab.", response.request_id
     
     def _parse_negotiation_response(self, response: LLMResponse, game_state: Dict) -> PlayerAction:
         """
         Parse the LLM response into a PlayerAction.
-        Expects a JSON response with thinking and content fields.
+        Expects response.content to be a dictionary with action details.
         """
         try:
-            # Parse the JSON response
-            resp_json = json.loads(response.content)
-            
             # Create PlayerAction with default Refuse
-            action = PlayerAction(action_type="Refuse")
+            action = PlayerAction(
+                action_type="Refuse",
+                thinking=response.thinking,
+                speech="I need more time to think about this."
+            )
             
-            # Set thinking from JSON
-            action.thinking = resp_json.get("thinking", response.thinking)
-            
-            # Get content object
-            content = resp_json.get("content", {})
-            
+            # Get content as dictionary
+            content = response.content
+            if not isinstance(content, dict):
+                print(f"\n⚠️ Response content is not a dictionary: {content}")
+                return action
+                
             # Parse action details
             if "action" in content and content["action"] in ["Offer", "Refuse", "Kill"]:
                 action.action_type = content["action"]
-            if "damage" in content:
-                action.damage_amount = content["damage"]
-            if "target" in content:
-                action.target_player = content["target"]
-            if "speech" in content:
-                action.speech = content["speech"]
+                action.damage_amount = content.get("damage")
+                action.target_player = content.get("target")
+                action.speech = content.get("speech", "")
+                action.thinking = response.thinking
+            else:
+                print(f"\n⚠️ Invalid or missing action in content: {content}")
             
             return action
             
-        except json.JSONDecodeError:
-            print("Warning: Failed to parse JSON response, falling back to text parsing")
-            # Fallback to old text parsing method
-            lines = response.content.strip().split('\n')
-            action = PlayerAction(action_type="Refuse")
-            action.thinking = response.thinking
-            
-            for line in lines:
-                if line.startswith("ACTION:"):
-                    action_type = line.split(":")[1].strip()
-                    if action_type in ["Offer", "Refuse", "Kill"]:
-                        action.action_type = action_type
-                elif line.startswith("DAMAGE:"):
-                    try:
-                        action.damage_amount = int(line.split(":")[1].strip())
-                    except ValueError:
-                        action.damage_amount = None
-                elif line.startswith("TARGET:"):
-                    action.target_player = line.split(":")[1].strip()
-                elif line.startswith("SPEECH:"):
-                    action.speech = line.split(":", 1)[1].strip()
-            
-            return action
+        except Exception as e:
+            print(f"\n❌ Error parsing negotiation response: {str(e)}")
+            print("Response:", response)
+            return PlayerAction(
+                action_type="Refuse",
+                thinking=f"Error parsing response: {str(e)}",
+                speech="I need more time to think about this."
+            )
     
     def _format_player_states(self, player_states: Dict) -> str:
         """Format player states for prompt."""

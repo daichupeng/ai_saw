@@ -1,9 +1,11 @@
 import os
 import json
+import uuid
 from typing import Optional, Literal, Dict, Any, Tuple
 from dataclasses import dataclass
 import yaml
 from pathlib import Path
+from database import save_prompt_history
 
 # Provider-specific imports
 from openai import OpenAI
@@ -37,6 +39,7 @@ class LLMResponse:
     """Data class to hold the response from the LLM."""
     thinking: str  # The model's reasoning process
     content: str   # The actual response content
+    request_id: str  # Unique identifier for this request
     model: Optional[str] = None
     tokens_used: Optional[int] = None
     provider: Optional[str] = None
@@ -64,6 +67,10 @@ class LLMClient:
     
     def get_response(self, prompt: str) -> LLMResponse:
         """Get a response from the LLM."""
+        # Generate a unique request ID
+        request_id = str(uuid.uuid4())
+        print(f"\n🔍 Request ID: {request_id}")
+        
         try:
             response = self._client.chat.completions.create(
                 model=self.model,
@@ -75,43 +82,146 @@ class LLMClient:
             
             # Extract thinking and content from response
             full_response = response.choices[0].message.content
-            thinking, content = self._parse_response(full_response)
             
-            return LLMResponse(thinking=thinking, content=content)
+            try:
+                # Try to parse as JSON
+                response_json = json.loads(full_response)
+                thinking = response_json.get("thinking", "")
+                content = response_json.get("content", {})
+                
+                # For negotiation responses, validate content
+                if isinstance(content, dict) and "action" in content:
+                    if content["action"] not in ["Offer", "Refuse", "Kill"]:
+                        print(f"\n⚠️ Invalid action type in response: {content['action']}")
+                        content = {
+                            "action": "Refuse",
+                            "damage": None,
+                            "target": None,
+                            "speech": "I need more time to think about this."
+                        }
+                    elif content["action"] == "Offer" and not isinstance(content.get("damage"), (int, float)):
+                        print(f"\n⚠️ Invalid damage amount for Offer action: {content.get('damage')}")
+                        content = {
+                            "action": "Refuse",
+                            "damage": None,
+                            "target": None,
+                            "speech": "I need more time to think about this."
+                        }
+                    elif content["action"] == "Kill" and not isinstance(content.get("target"), str):
+                        print(f"\n⚠️ Invalid target for Kill action: {content.get('target')}")
+                        content = {
+                            "action": "Refuse",
+                            "damage": None,
+                            "target": None,
+                            "speech": "I need more time to think about this."
+                        }
+                
+                # Save prompt and response to database with request ID
+                save_prompt_history(
+                    raw_prompt=prompt,
+                    raw_response=full_response,
+                    request_id=request_id
+                )
+                
+                return LLMResponse(thinking=thinking, content=content, request_id=request_id)
+                
+            except json.JSONDecodeError as e:
+                print(f"\n⚠️ Failed to parse response as JSON: {str(e)}")
+                print("Raw response:", full_response)
+                
+                # Save failed response to database
+                save_prompt_history(
+                    raw_prompt=prompt,
+                    raw_response=full_response,
+                    request_id=request_id
+                )
+                
+                # Return a default response
+                return LLMResponse(
+                    thinking="Failed to parse response",
+                    content={
+                        "action": "Refuse",
+                        "damage": None,
+                        "target": None,
+                        "speech": "I need more time to think about this."
+                    },
+                    request_id=request_id
+                )
             
         except Exception as e:
+            # Save failed prompt to database with error message
+            save_prompt_history(
+                raw_prompt=prompt,
+                raw_response=f"ERROR: {str(e)}",
+                request_id=request_id
+            )
             raise LLMError(f"Error getting response from LLM: {str(e)}")
 
-    def _parse_response(self, text: str) -> Tuple[str, str]:
-        """Parse the response text into thinking and content parts."""
+    def _parse_response(self, text: str) -> Tuple[str, Dict]:
+        """
+        Parse the response text into thinking and content parts.
+        Returns a tuple of (thinking, content) where content is a dictionary.
+        """
         try:
             # Try to parse as JSON
             response_json = json.loads(text)
             
+            # Validate response structure
+            if not isinstance(response_json, dict):
+                raise ValueError("Response is not a dictionary")
+            
             # Extract thinking and content
             thinking = response_json.get("thinking", "")
-            content = json.dumps(response_json.get("content", {}))  # Convert content back to JSON string
+            content = response_json.get("content", {})
+            
+            # For negotiation responses, ensure content has required fields
+            if isinstance(content, dict) and "action" in content:
+                if content["action"] not in ["Offer", "Refuse", "Kill"]:
+                    raise ValueError(f"Invalid action type: {content['action']}")
+                    
+                # Validate damage amount for Offer action
+                if content["action"] == "Offer":
+                    damage = content.get("damage")
+                    if not isinstance(damage, (int, float)):
+                        raise ValueError(f"Invalid damage amount for Offer action: {damage}")
+                
+                # Validate target for Kill action
+                if content["action"] == "Kill":
+                    target = content.get("target")
+                    if not isinstance(target, str):
+                        raise ValueError(f"Invalid target for Kill action: {target}")
+                
+                # Ensure speech is present
+                if "speech" not in content:
+                    content["speech"] = ""
             
             return thinking, content
             
-        except json.JSONDecodeError:
-            # Fallback to old text parsing method
-            print("Warning: Failed to parse JSON response, falling back to text parsing")
-            thinking = ""
-            content = ""
+        except json.JSONDecodeError as e:
+            print(f"Warning: Failed to parse JSON response: {str(e)}")
+            print("Raw response:", text)
             
-            # Split the text into sections
-            parts = text.split("[THINKING]")
-            if len(parts) > 1:
-                thinking_and_content = parts[1].split("[CONTENT]")
-                if len(thinking_and_content) > 1:
-                    thinking = thinking_and_content[0].strip()
-                    content = thinking_and_content[1].strip()
-                else:
-                    # If no [CONTENT] marker, treat everything after [THINKING] as thinking
-                    thinking = thinking_and_content[0].strip()
-            else:
-                # If no markers found, treat entire response as content
-                content = text.strip()
-                
+            # Create a properly formatted response
+            thinking = "Failed to parse response"
+            content = {
+                "action": "Refuse",
+                "damage": None,
+                "target": None,
+                "speech": "I need more time to think about this."
+            }
+            
+            return thinking, content
+        except ValueError as e:
+            print(f"Warning: Invalid response format: {str(e)}")
+            print("Raw response:", text)
+            
+            # Create a properly formatted response
+            thinking = f"Invalid response format: {str(e)}"
+            content = {
+                "action": "Refuse",
+                "damage": None,
+                "target": None,
+                "speech": "I need more time to think about this."
+            }
+            
             return thinking, content
