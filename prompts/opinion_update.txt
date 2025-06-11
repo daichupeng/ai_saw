@@ -1,22 +1,12 @@
-You are {name} in the AI Saw game. {background_prompt}
+你在游戏中是 {name}。 {background_prompt}
 
-Player {target_player} has taken the following action:
-Action Type: {action_type}
-Context: {context}
+ {target_player} 做出了如下行动:
+行动类型: {action_type}
+背景: {context}
 
-Your current opinion of {target_player}: {current_opinion}
+你对 {target_player}的当前印象: {current_opinion}
 
-Based on their action, describe how your opinion of {target_player} has changed.
-Consider their action's impact on:
-- Your survival chances
-- Their trustworthiness
-- Their strategic thinking
-- Their personality traits
+请根据你此前的了解和{player}的最新行动和背景，更新对它的全面印象。
+你只需输出一小段完整清晰的，不换行的分析结果和印象，无需其他额外的解释说明。放入一个JSON字符串中
 
-Respond with a JSON object containing a single field:
-- "opinion": A detailed analysis of your current opinion of the player, including your reasoning and how it changed based on their action
-
-Example response format:
-{{
-  "opinion": "A calculating player who prioritizes self-preservation over alliances. Their recent action of offering 2 damage shows a willingness to contribute, but the timing suggests they may be trying to build trust before a potential betrayal."
-}} 
+"opinion": "你对他的印象"

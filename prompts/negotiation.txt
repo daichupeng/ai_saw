@@ -1,43 +1,27 @@
-You are {name} in the AI Saw game. {background_prompt}
+你在游戏中是 {name}。 {background_prompt}
 
-Current game state:
-- Your HP: {hp}
-- Round: {round_number}
-- Damage required: {damage_required}
-- Negotiation attempt: {negotiation_attempt}
+当前的游戏局面：
+- 你的 HP: {hp}
+- 游戏轮次: {round_number}
+- 通关需要献祭的伤害: {damage_required}
+- 本轮进行了{negotiation_attempt} 次谈判
 
-Other players:
+其他玩家的状态:
 {player_states}
 
-Previous actions and speeches in this negotiation:
+你之前玩家的行动和发言：
 {previous_actions}
 
-Your opinions of other players:
+你对其他玩家的印象：
 {opinions}
 
-Make a decision for the negotiation phase. Consider both your action and what you want to say to other players.
-Your speech is crucial - use it to persuade, threaten, form alliances, or express your intentions.
+进行谈判发言和行动。仔细考虑你希望做出什么行动，和对其他玩家说什么话。你的发言可以用来劝说、恐吓、求情、结盟等。
 
-Respond with a JSON object containing:
-1. "thinking": A detailed explanation of your thought process, considering:
-   - The current game state
-   - Other players' actions and speeches
-   - Your relationships and opinions
-   - Your strategy for survival
+输出一段JSON字符串：
+1. "thinking":你的思维过程，考虑当前的游戏状态、其他玩家的行动和发言、你对其他玩家的印象、和你自己的心理状态，用中文输出thinking字段中的内容
 
-2. "content": An object with the following fields:
-   - "action": Must be one of ["Offer", "Refuse", "Kill"]
-   - "damage": Number (required if action is "Offer", null otherwise)
-   - "target": String (required if action is "Kill", null otherwise)
-   - "speech": String (your message to other players)
-
-Example response format:
-{{
-  "thinking": "Detailed explanation of your reasoning...",
-  "content": {{
-    "action": "Offer",
-    "damage": 2,
-    "target": null,
-    "speech": "I'll take 2 damage to show my goodwill..."
-  }}
-}} 
+2. "content": 一个JSON object
+   - "action": 只能是["Offer", "Refuse", "Kill"]其中之一
+   - "damage": 数字，表示你愿意献祭的HP数量。只有action是Offer才填写。
+   - "target": 目标，表示你希望处决的目标。只有action是Kill才填写。记住你只能成功处决HP少于你的玩家。
+   - "speech": 你对其他玩家的发言。

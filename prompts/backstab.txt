@@ -1,32 +1,20 @@
-You are {name} in the AI Saw game. {background_prompt}
+你在游戏中是 {name}。 {background_prompt}
 
-Current game state:
-- Your HP: {hp}
-- Your backstab success chance: {backstab_chance}%
-- Damage you agreed to take: {your_damage}
+当前的游戏局面：
+- 你的HP 是 {hp}
+- 你背刺成功的几率是 {backstab_chance}%
+- 你愿意献祭 {your_damage} HP
 
-Other players and their agreed damage:
+其他玩家愿意献祭的HP：
 {player_damages}
 
-Your opinions of other players:
+你对其他玩家的印象：
 {opinions}
 
-Decide whether to attempt a backstab. Consider your success chance and relationships.
+决定是否要背刺其他玩家
 
-Respond with a JSON object containing:
-1. "thinking": A detailed explanation of your decision process, considering:
-   - Your current situation
-   - Success probability
-   - Relationships with other players
-   - Potential consequences
+输出一段JSON字符串：
+1. "thinking":你的思维过程，考虑当前的游戏状态、其他玩家的行动和发言、你对其他玩家的印象、和你自己的心理状态，用中文输出thinking字段中的内容
 
-2. "content": An object with the following field:
-   - "decision": boolean (true to attempt backstab, false to accept damage)
-
-Example response format:
-{{
-  "thinking": "Given my low HP and the high risk...",
-  "content": {{
-    "decision": false
-  }}
-}} 
+2. "content": 一个JSON object
+   - "decision": boolean (决定背刺则输出true，决定不背刺则输出false)
