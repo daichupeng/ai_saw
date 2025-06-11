@@ -192,7 +192,7 @@ class Player:
         # Print raw prompt
         print("\n📤 Sending Negotiation Prompt:")
         print("=" * 50)
-        print(prompt)
+        # print(prompt)
         print("=" * 50)
         
         # Get response from LLM
@@ -201,7 +201,7 @@ class Player:
         # Print raw response with request ID
         print("\n📥 Received Negotiation Response:")
         print(f"Request ID: {response.request_id}")
-        print(f"Response: {response}")
+        # print(f"Response: {response}")
         
         # Parse the response into a PlayerAction
         action = self._parse_negotiation_response(response, game_state)
@@ -228,7 +228,7 @@ class Player:
         # Print raw prompt
         print("\n📤 Sending Backstab Decision Prompt:")
         print("=" * 50)
-        print(prompt)
+        # print(prompt)
         print("=" * 50)
         
         response = self._llm_client.get_response(prompt)
@@ -236,7 +236,7 @@ class Player:
         # Print raw response with request ID
         print("\n📥 Received Backstab Decision Response:")
         print(f"Request ID: {response.request_id}")
-        print(f"Response: {response}")
+        # print(f"Response: {response}")
         
         try:
             # Handle both string and dictionary content

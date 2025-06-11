@@ -196,12 +196,15 @@ class Game:
             self.current_round.player_actions[player_name] = action
             
             # Log negotiation action with request ID
-            log(f"Negotiation Action - Player: {player_name}, Action: {action.action_type}", 2, action.request_id)
+            log(f"Negotiation Action - Player: {player_name}")
+            log(f"Thinking: {action.thinking}", 3, action.request_id)
+            log(f"Speech: {action.speech}", 3, action.request_id)
+            log(f"Action: {action.action_type}", 2, action.request_id)
             if action.damage_amount:
                 log(f"Damage Amount: {action.damage_amount}", 3, action.request_id)
             if action.target_player:
                 log(f"Target: {action.target_player}", 3, action.request_id)
-            
+
             
             # Handle kill action
             if action.action_type == "Kill":
@@ -317,6 +320,7 @@ class Game:
             
             # Log backstab decision with request ID
             log(f"Backstab Decision - Player: {player_name}", 2, request_id)
+            log(f"Thinking: {thinking}", 3, request_id)
             log(f"Decision: {'Will Backstab' if will_backstab else 'Will Not Backstab'}", 3, request_id)
             
             if will_backstab:
@@ -326,11 +330,29 @@ class Game:
                     player.backstab_attempts += 1
                     print(f"🗡️ {player_name}'s backstab succeeded!")
                     log(f"{player_name}'s backstab succeeded!", 2, request_id)
+                    
+                    # Update opinions about successful backstab
+                    context = Context(
+                        event=EventType.BACKSTAB_SUCCESS,
+                        round_number=self.current_round.number,
+                        acting_player=player_name,
+                        speech=thinking
+                    )
+                    self.update_all_opinions(player_name, context.event.value, context.to_dict())
                 else:
                     failed_backstabs.append(player_name)
                     print(f"❌ {player_name}'s backstab failed!")
                     log(f"{player_name}'s backstab failed!", 2, request_id)
                     self.apply_damage(player_name, action.damage_amount or 0)
+                    
+                    # Update opinions about failed backstab
+                    context = Context(
+                        event=EventType.BACKSTAB_FAIL,
+                        round_number=self.current_round.number,
+                        acting_player=player_name,
+                        speech=thinking
+                    )
+                    self.update_all_opinions(player_name, context.event.value, context.to_dict())
             else:
                 loyal_players.append(player_name)
                 print(f"✋ {player_name} chose not to backstab")
@@ -363,20 +385,6 @@ class Game:
                     for name in successful_backstabs
                 )
                 self.apply_damage(last_player, total_damage)
-        
-        # Create context and update opinions about execution phase
-        context = Context(
-            event=EventType.EXECUTION,
-            round_number=self.current_round.number,
-            acting_player="system",  # system event affecting all players
-            successful_backstabbers=set(successful_backstabs),
-            failed_backstabbers=set(failed_backstabs),
-            loyal_players=set(loyal_players)
-        )
-        
-        # Update everyone's opinion about the execution phase results
-        for player_name in self.active_players:
-            self.update_all_opinions(player_name, context.event.value, context.to_dict())
         
         # Complete round
         self.current_round.status = RoundStatus.COMPLETED
@@ -456,14 +464,15 @@ class Game:
                 total_damage = self.current_round.total_damage_offered()
                 log(f"\nNegotiation Results:", 1)
                 log(f"Total Damage Offered: {total_damage}/{self.current_round.damage_required}", 2)
-                for player_name, action in self.current_round.player_actions.items():
-                    log(f"- {player_name}:", 2)
-                    log(f"Action: {action.action_type}", 3)
-                    if action.damage_amount:
-                        log(f"Damage: {action.damage_amount}", 3)
-                    if action.target_player:
-                        log(f"Target: {action.target_player}", 3)
-                    log(f"Speech: {action.speech}", 3)
+                
+                # for player_name, action in self.current_round.player_actions.items():
+                #     log(f"- {player_name}:", 2)
+                #     log(f"Action: {action.action_type}", 3)
+                #     if action.damage_amount:
+                #         log(f"Damage: {action.damage_amount}", 3)
+                #     if action.target_player:
+                #         log(f"Target: {action.target_player}", 3)
+                #     log(f"Speech: {action.speech}", 3)
                 
                 if not success and self.current_round.negotiation_attempts >= 3:
                     log("\n⚡ NEGOTIATION FAILURE PENALTY", 1)
@@ -560,40 +569,34 @@ def main():
     # Create players with different personalities
     players = [
         Player(
-            name="Strategist",
+            name="陈志华",
             model="gpt-3.5-turbo",
-            background_prompt="You are a calculating and strategic player who carefully analyzes each situation. "
-                            "You value information and try to predict others' moves. You prefer stable alliances "
-                            "but will betray if the odds are strongly in your favor."
+            background_prompt="你是个靠拆迁致富的地产商，为了项目利润曾强制拆除养老院，导致多名老人无家可归后病死。在商场上以无情著称，连亲兄弟都曾被他算计破产。"
         ),
         Player(
-            name="Survivor",
+            name="林小雨",
             model="gpt-3.5-turbo",
-            background_prompt="You are a cautious player focused primarily on survival. You avoid conflict when possible "
-                            "and prefer to let others take risks. However, you can be ruthless if cornered."
+            background_prompt="为了给患白血病的7岁儿子筹集治疗费，你挪用了学校的救灾款项，被发现后失业。丈夫因无法承受压力而自杀，你独自承担巨额债务。曾经温柔的你变得歇斯底里。"
         ),
         Player(
-            name="Diplomat",
+            name="王大伟",
             model="gpt-3.5-turbo",
-            background_prompt="You are a charismatic negotiator who excels at building alliances. You try to maintain "
-                            "peace and coordinate group actions. You avoid betrayal unless absolutely necessary."
+            background_prompt="你沉迷网络赌博，输光了家里的所有积蓄和父母的养老钱。为了还债，你偷偷将乘客遗失的贵重物品据为己有，甚至曾企图绑架一名富家女孩勒索赎金，但最终胆怯放弃。"
         ),
         Player(
-            name="Warrior",
+            name="苏梦琪",
             model="gpt-3.5-turbo",
-            background_prompt="You are an aggressive and direct player who isn't afraid of conflict. You respect "
-                            "strength and honesty, despise cowardice, and prefer straightforward solutions."
+            background_prompt="你曾是优秀的ICU护士，目睹了太多因为医疗腐败而死去的病人。你开始对那些收红包、不负责任的医生进行制裁——在他们的药物中添加有害物质。被发现后，你杀死了举报你的同事。"
         ),
         Player(
-            name="Trickster",
+            name="张建文",
             model="gpt-3.5-turbo",
-            background_prompt="You are an unpredictable player who enjoys creating chaos. You use misdirection "
-                            "and manipulation, making it hard for others to anticipate your moves."
+            background_prompt="你是个退伍军人，曾在维和任务中失去战友而患上PTSD。退休后做保安期间，因为过度使用武力导致一名年轻窃贼重伤致残。你认为自己是维护正义，对质疑他的人充满敌意。"
         )
     ]
     
     # Create and run the game
-    game = Game(players=players, description="A game of survival, negotiation, and betrayal.", max_rounds=6)
+    game = Game(players=players, description="A game of survival, negotiation, and betrayal.", max_rounds=1)
     winner = game.play()
     
     print(f"\n🏆 Game Over! Winner: {winner}")
