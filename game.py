@@ -56,6 +56,7 @@ class Context:
     target_player: Optional[str] = None  # This will be the player's name for display
     damage_amount: Optional[float] = None
     speech: Optional[str] = None
+    outcome: Optional[str] = None  # Describes the result of the action
     successful_backstabbers: Set[str] = field(default_factory=set)  # These will be player names
     failed_backstabbers: Set[str] = field(default_factory=set)  # These will be player names
     loyal_players: Set[str] = field(default_factory=set)  # These will be player names
@@ -77,6 +78,8 @@ class Context:
             context_dict["damage"] = self.damage_amount
         if self.speech:
             context_dict["speech"] = self.speech
+        if self.outcome:
+            context_dict["outcome"] = self.outcome
             
         if self.event == EventType.EXECUTION:
             context_dict.update({
@@ -227,7 +230,8 @@ class Game:
                 speech=action.speech,
                 total_damage_required=self.current_round.damage_required,
                 total_damage_offered=self.current_round.total_damage_offered(),
-                negotiation_attempt=self.current_round.negotiation_attempts
+                negotiation_attempt=self.current_round.negotiation_attempts,
+                outcome="决定献祭自己" if action.action_type == "Offer" else "拒绝献祭自己"
             )
             self.update_all_opinions(player_id, context.event.value, context.to_dict())
 
@@ -251,6 +255,23 @@ class Game:
         killer = self.players[killer_id]
         target = self.players[action.target_player_id]
         
+        # Check if target is still alive
+        if action.target_player_id not in self.active_players:
+            log(f"❌ Kill action failed: {killer.name} cannot kill {target.name} (target already eliminated)")
+            
+            # Create context for failed kill attempt
+            context = Context(
+                event=EventType.KILL,
+                round_number=self.current_round.number,
+                acting_player=killer.name,
+                target_player=target.name,
+                speech=action.speech,
+                outcome="因为目标已经死亡，所以无法杀死目标"
+            )
+            # Update opinions about the failed kill attempt
+            self.update_all_opinions(killer_id, context.event.value, context.to_dict())
+            return False
+        
         # Validate kill conditions
         if killer.hp <= target.hp:
             log(f"❌ Kill action failed: {killer.name} cannot kill {target.name} (invalid HP condition)")
@@ -261,7 +282,8 @@ class Game:
                 round_number=self.current_round.number,
                 acting_player=killer.name,
                 target_player=target.name,
-                speech=action.speech
+                speech=action.speech,
+                outcome="因为自己太血量低于对方，无法杀死目标"
             )
             # Update opinions about the failed kill attempt
             self.update_all_opinions(killer_id, context.event.value, context.to_dict())
@@ -277,7 +299,8 @@ class Game:
             round_number=self.current_round.number,
             acting_player=killer.name,
             target_player=target.name,
-            speech=action.speech
+            speech=action.speech,
+            outcome="成功杀死目标"
         )
         self.update_all_opinions(killer_id, context.event.value, context.to_dict())
         self.eliminate_player(action.target_player_id)
@@ -340,7 +363,8 @@ class Game:
                         event=EventType.BACKSTAB_SUCCESS,
                         round_number=self.current_round.number,
                         acting_player=player.name,
-                        speech=thinking
+                        speech=thinking,
+                        outcome="成功背刺其他人，逃脱了自己承诺好的献祭"
                     )
                     self.update_all_opinions(player_id, context.event.value, context.to_dict())
                 else:
@@ -354,14 +378,25 @@ class Game:
                         event=EventType.BACKSTAB_FAIL,
                         round_number=self.current_round.number,
                         acting_player=player.name,
-                        speech=thinking
+                        speech=thinking,
+                        outcome="想逃脱自己承诺的献祭，但失败了"
                     )
                     self.update_all_opinions(player_id, context.event.value, context.to_dict())
             else:
                 loyal_players.add(player.name)  # Use name for display
                 print(f"✋ {player.name} chose not to backstab")
-                log(f"{player.name} chose not to backstab", 2, request_id)
+                # log(f"{player.name} chose not to backstab", 2, request_id)
                 self.apply_damage(player_id, action.damage_amount or 0)
+                
+                # Update opinions about choosing not to backstab
+                # context = Context(
+                #     event=EventType.NO_BACKSTAB,
+                #     round_number=self.current_round.number,
+                #     acting_player=player.name,
+                #     speech=thinking,
+                #     outcome="chose_loyalty"
+                # )
+                # self.update_all_opinions(player_id, context.event.value, context.to_dict())
         
         # Handle successful backstabs
         if successful_backstabbers:
@@ -429,7 +464,7 @@ class Game:
                     action_type=action_type,
                     context=context
                 )
-                log(f"Opinion Update - Observer: {observer}, Subject: {subject},{opinion}, Request ID: {request_id}, ")
+                log(f"{observer}对{subject}的印象更新了：{opinion}, Request ID: {request_id}, ")
 
     def is_game_over(self) -> bool:
         """Check if the game is over."""
