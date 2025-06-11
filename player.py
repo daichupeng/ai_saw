@@ -110,22 +110,10 @@ class Player:
         response = self._llm_client.get_response(prompt)
         
         try:
-            content = response.content
-            if isinstance(content, str):
-                # Remove markdown code block if present
-                content = content.strip()
-                if content.startswith("```json"):
-                    content = content[7:]
-                if content.endswith("```"):
-                    content = content[:-3]
-                content = content.strip()
-                
-                try:
-                    content = json.loads(content)
-                except json.JSONDecodeError as e:
-                    print(f"\n⚠️ Failed to parse response as JSON: {e}")
-                    print(f"Raw response: {response.content}")
-                    return self.name, target_player_name, "", response.request_id
+            # Handle nested content structure
+            content = response.content.get("content", {})
+            if not content:
+                content = response.content  # If not nested, use the content directly
             
             opinion = content.get("opinion", "")
             print(f"opinion: {opinion}")
@@ -147,12 +135,7 @@ class Player:
                 - damage_required: Total damage to be distributed
                 - player_states: Dict of player states (hp, etc.)
                 - negotiation_attempt: Which attempt this is at negotiating
-                - previous_actions: List of previous actions in this negotiation, including:
-                    - player: Name of the player
-                    - action_type: "Offer", "Refuse", or "Kill"
-                    - damage_amount: (Optional) Amount of damage offered
-                    - target: (Optional) Target player for Kill action
-                    - speech: What the player said during their action
+                - previous_actions: List of previous actions in this negotiation
                 
         Returns:
             PlayerAction containing the decision, speech, and thinking process
@@ -172,7 +155,6 @@ class Player:
         # Print raw prompt
         print("\n📤 Sending Negotiation Prompt:")
         print("=" * 50)
-        # print(prompt)
         print("=" * 50)
         
         # Get response from LLM
@@ -181,7 +163,6 @@ class Player:
         # Print raw response with request ID
         print("\n📥 Received Negotiation Response:")
         print(f"Request ID: {response.request_id}")
-        # print(f"Response: {response}")
         
         # Parse the response into a PlayerAction
         action = self._parse_negotiation_response(response, game_state)
@@ -208,7 +189,6 @@ class Player:
         # Print raw prompt
         print("\n📤 Sending Backstab Decision Prompt:")
         print("=" * 50)
-        # print(prompt)
         print("=" * 50)
         
         response = self._llm_client.get_response(prompt)
@@ -216,22 +196,15 @@ class Player:
         # Print raw response with request ID
         print("\n📥 Received Backstab Decision Response:")
         print(f"Request ID: {response.request_id}")
-        # print(f"Response: {response}")
         
         try:
-            # Handle both string and dictionary content
-            content = response.content
-            if isinstance(content, str):
-                try:
-                    content = json.loads(content)
-                except json.JSONDecodeError:
-                    # Fallback to simple text parsing
-                    decision = content.strip().lower() == "true"
-                    return decision, response.thinking, response.request_id
+            # Handle nested content structure
+            content = response.content.get("content", {})
+            if not content:
+                content = response.content  # If not nested, use the content directly
             
-            # At this point content should be a dictionary
-            decision = content.get("content", {}).get("decision", False)
-            thinking = content.get("thinking", response.thinking)
+            decision = content.get("decision", False)
+            thinking = response.content.get("thinking", "")
             
             return decision, thinking, response.request_id
             
@@ -248,16 +221,14 @@ class Player:
             # Create PlayerAction with default Refuse
             action = PlayerAction(
                 action_type="Refuse",
-                thinking=response.thinking,
                 speech="我需要更多时间思考。"
             )
             
-            # Get content as dictionary
-            content = response.content
-            if not isinstance(content, dict):
-                print(f"\n⚠️ Response content is not a dictionary: {content}")
-                return action
-                
+            # Handle nested content structure
+            content = response.content.get("content", {})
+            if not content:
+                content = response.content  # If not nested, use the content directly
+            
             # Parse action details
             if "action" in content and content["action"] in ["Offer", "Refuse", "Kill"]:
                 action.action_type = content["action"]
@@ -271,9 +242,9 @@ class Player:
                     else:
                         print("\n⚠️ Missing player_name_to_id mapping in game state")
                 action.speech = content.get("speech", "")
-                action.thinking = response.thinking
+                action.thinking = response.content.get("thinking", "")
             else:
-                print(f"\n⚠️ Invalid or missing action in content: {content}")
+                print(f"\n⚠️ Invalid or missing action in content: {response.content}")
             
             return action
             

@@ -42,30 +42,51 @@ def save_test_results(results: list, output_file: Path):
             
             f.write("\n" + "=" * 50 + "\n")
 
-def test_player():
+@pytest.fixture
+def mock_llm_client():
+    """Create a mock LLM client for testing."""
+    mock_client = Mock(spec=LLMClient)
+    
+    def mock_get_response(prompt: str) -> LLMResponse:
+        if "opinion_update" in prompt:
+            return LLMResponse(
+                content={"opinion": "This player seems trustworthy"},
+                request_id="test-123"
+            )
+        elif "negotiation" in prompt:
+            return LLMResponse(
+                content={
+                    "action": "Offer",
+                    "damage": 2,
+                    "speech": "I'll help with the damage.",
+                    "thinking": "Strategic cooperation is important"
+                },
+                request_id="test-456"
+            )
+        else:  # backstab
+            return LLMResponse(
+                content={
+                    "decision": False,
+                    "thinking": "It's too risky to backstab now"
+                },
+                request_id="test-789"
+            )
+    
+    mock_client.get_response.side_effect = mock_get_response
+    return mock_client
+
+def test_player(mock_llm_client):
     """Test all functions of the Player class."""
-    
-    # Try to load API key from config file first
-    config_path = project_root / "config.yaml"
-    if config_path.exists():
-        try:
-            with open(config_path, 'r') as f:
-                config = yaml.safe_load(f)
-                os.environ["OPENAI_API_KEY"] = config['openai']['api_key']
-        except Exception as e:
-            print(f"Failed to load API key from config: {e}")
-    
-    if "OPENAI_API_KEY" not in os.environ:
-        pytest.skip("No OpenAI API key available")
-    
     results = []
     
-    # Create a test player
+    # Create a test player with mock LLM client
     player = Player(
+        player_id="test_player",
         name="TestPlayer",
         model="gpt-3.5-turbo",
         background_prompt="You are a strategic and cautious player who values survival above all else."
     )
+    player._llm_client = mock_llm_client
     
     # Test 1: Basic player initialization
     results.append({
@@ -100,21 +121,23 @@ def test_player():
     # Test 4: Opinion update
     test_case = {
         "name": "Opinion Update",
-        "description": "Test updating opinion about another player",
-        "prompt": player._prompt_templates["opinion_update"].format(
-            name=player.name,
-            background_prompt=player.background_prompt,
-            target_player="Player2",
-            action_type="Offer",
-            context={"damage": 2},
-            current_opinion="No previous opinion"
-        )
+        "description": "Test updating opinion about another player"
     }
     
     try:
-        player.update_opinion("Player2", "Offer", {"damage": 2})
-        test_case["success"] = "Player2" in player.opinions
-        test_case["response"] = {"opinion": player.opinions["Player2"]}
+        observer, subject, opinion, request_id = player.update_opinion(
+            target_player_id="player2",
+            target_player_name="Player2",
+            action_type="Offer",
+            context={"damage": 2}
+        )
+        test_case["success"] = all([
+            observer == "TestPlayer",
+            subject == "Player2",
+            opinion == "This player seems trustworthy",
+            request_id == "test-123"
+        ])
+        test_case["response"] = {"opinion": opinion}
     except Exception as e:
         test_case["success"] = False
         test_case["error"] = str(e)
@@ -137,32 +160,31 @@ def test_player():
                 "damage_amount": 1,
                 "speech": "I'll take some damage to help."
             }
-        ]
+        ],
+        "player_name_to_id": {
+            "Player2": "player2",
+            "Player3": "player3"
+        }
     }
     
     test_case = {
         "name": "Negotiation Decision",
-        "description": "Test negotiation phase decision making",
-        "prompt": player._prompt_templates["negotiation"].format(
-            name=player.name,
-            background_prompt=player.background_prompt,
-            hp=player.hp,
-            round_number=game_state['round_number'],
-            damage_required=game_state['damage_required'],
-            negotiation_attempt=game_state['negotiation_attempt'],
-            player_states=player._format_player_states(game_state['player_states']),
-            previous_actions=player._format_previous_actions(game_state['previous_actions']),
-            opinions=player._format_opinions()
-        )
+        "description": "Test negotiation phase decision making"
     }
     
     try:
         action = player.negotiate(game_state)
-        test_case["success"] = isinstance(action, PlayerAction)
+        test_case["success"] = all([
+            isinstance(action, PlayerAction),
+            action.action_type == "Offer",
+            action.damage_amount == 2,
+            action.speech == "I'll help with the damage.",
+            action.thinking == "Strategic cooperation is important",
+            action.request_id == "test-456"
+        ])
         test_case["response"] = {
             "action_type": action.action_type,
             "damage_amount": action.damage_amount,
-            "target_player": action.target_player,
             "speech": action.speech,
             "thinking": action.thinking
         }
@@ -183,21 +205,16 @@ def test_player():
     
     test_case = {
         "name": "Backstab Decision",
-        "description": "Test backstab decision making",
-        "prompt": player._prompt_templates["backstab"].format(
-            name=player.name,
-            background_prompt=player.background_prompt,
-            hp=player.hp,
-            backstab_chance=player.get_current_backstab_chance() * 100,
-            your_damage=game_state['your_damage'],
-            player_damages=player._format_player_damages(game_state['player_damages']),
-            opinions=player._format_opinions()
-        )
+        "description": "Test backstab decision making"
     }
     
     try:
-        decision, thinking = player.decide_backstab(game_state)
-        test_case["success"] = isinstance(decision, bool)
+        decision, thinking, request_id = player.decide_backstab(game_state)
+        test_case["success"] = all([
+            decision is False,
+            thinking == "It's too risky to backstab now",
+            request_id == "test-789"
+        ])
         test_case["response"] = {
             "decision": decision,
             "thinking": thinking
@@ -243,4 +260,4 @@ def test_player():
     assert all(test["success"] for test in results), "Some tests failed"
 
 if __name__ == "__main__":
-    test_player() 
+    pytest.main([__file__]) 

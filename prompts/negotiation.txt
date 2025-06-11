@@ -6,7 +6,7 @@
 - 通关需要献祭的伤害: {damage_required}
 - 本轮进行了{negotiation_attempt} 次谈判
 
-其他玩家的状态:
+仍存活玩家的状态:
 {player_states}
 
 你之前玩家的行动和发言：

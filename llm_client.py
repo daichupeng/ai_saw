@@ -37,8 +37,7 @@ class LLMError(Exception):
 @dataclass
 class LLMResponse:
     """Data class to hold the response from the LLM."""
-    thinking: str  # The model's reasoning process
-    content: str   # The actual response content
+    content: Dict[str, Any]  # The parsed JSON response content
     request_id: str  # Unique identifier for this request
     model: Optional[str] = None
     tokens_used: Optional[int] = None
@@ -80,76 +79,43 @@ class LLMClient:
                 ]
             )
             
-            # Extract thinking and content from response
-            full_response = response.choices[0].message.content
+            # Get raw response text
+            raw_response = response.choices[0].message.content
+            
+            # Clean up markdown code blocks if present
+            cleaned_response = raw_response.strip()
+            if cleaned_response.startswith("```json"):
+                cleaned_response = cleaned_response[7:]
+            if cleaned_response.endswith("```"):
+                cleaned_response = cleaned_response[:-3]
+            cleaned_response = cleaned_response.strip()
             
             try:
-                # Try to parse as JSON
-                response_json = json.loads(full_response)
-                thinking = response_json.get("thinking", "")
-                content = response_json.get("content", {})
+                # Parse as JSON
+                content = json.loads(cleaned_response)
                 
-                # For negotiation responses, validate content
-                if isinstance(content, dict) and "opinion" in content:
-                    content = {"opinion": content.get("opinion")}
-
-                if isinstance(content, dict) and "action" in content:
-                    if content["action"] not in ["Offer", "Refuse", "Kill"]:
-                        print(f"\n⚠️ Invalid action type in response: {content['action']}")
-                        content = {
-                            "action": "Refuse",
-                            "damage": None,
-                            "target": None,
-                            "speech": "I need more time to think about this."
-                        }
-                    elif content["action"] == "Offer" and not isinstance(content.get("damage"), (int, float)):
-                        print(f"\n⚠️ Invalid damage amount for Offer action: {content.get('damage')}")
-                        content = {
-                            "action": "Refuse",
-                            "damage": None,
-                            "target": None,
-                            "speech": "I need more time to think about this."
-                        }
-                    elif content["action"] == "Kill" and not isinstance(content.get("target"), str):
-                        print(f"\n⚠️ Invalid target for Kill action: {content.get('target')}")
-                        content = {
-                            "action": "Refuse",
-                            "damage": None,
-                            "target": None,
-                            "speech": "I need more time to think about this."
-                        }
-                
-                # Save prompt and response to database with request ID
+                # Save successful response to database
                 save_prompt_history(
                     raw_prompt=prompt,
-                    raw_response=full_response,
+                    raw_response=raw_response,
                     request_id=request_id
                 )
                 
-                return LLMResponse(thinking=thinking, content=content, request_id=request_id)
+                return LLMResponse(content=content, request_id=request_id)
                 
             except json.JSONDecodeError as e:
                 print(f"\n⚠️ Failed to parse response as JSON: {str(e)}")
-                print("Raw response:", full_response)
+                print("Raw response:", raw_response)
                 
                 # Save failed response to database
                 save_prompt_history(
                     raw_prompt=prompt,
-                    raw_response=full_response,
+                    raw_response=raw_response,
                     request_id=request_id
                 )
                 
-                # Return a default response
-                return LLMResponse(
-                    thinking="Failed to parse response",
-                    content={
-                        "action": "Refuse",
-                        "damage": None,
-                        "target": None,
-                        "speech": "I need more time to think about this."
-                    },
-                    request_id=request_id
-                )
+                # Return empty content on parse failure
+                return LLMResponse(content={}, request_id=request_id)
             
         except Exception as e:
             # Save failed prompt to database with error message
