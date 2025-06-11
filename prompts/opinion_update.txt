@@ -1,12 +1,14 @@
 你在游戏中是 {name}。 {background_prompt}
 
- {target_player} 做出了如下行动:
+{target_player} 做出了如下行动:
 行动类型: {action_type}
 背景: {context}
 
 你对 {target_player}的当前印象: {current_opinion}
 
-请根据你此前的了解和{player}的最新行动和背景，更新对它的全面印象。
-你只需输出一小段完整清晰的，不换行的分析结果和印象，无需其他额外的解释说明。放入一个JSON字符串中
+请根据你此前的了解和{target_player}的最新行动和背景，更新对它的全面印象。
+输出一段JSON字符串：
+1. "thinking":直接为空
 
-"opinion": "你对他的印象"
+2. "content": 一个JSON object
+   - "opinion": 你只需输出一小段完整清晰的，不换行的分析结果和印象，无需其他额外的解释说明

@@ -90,6 +90,9 @@ class LLMClient:
                 content = response_json.get("content", {})
                 
                 # For negotiation responses, validate content
+                if isinstance(content, dict) and "opinion" in content:
+                    content = {"opinion": content.get("opinion")}
+
                 if isinstance(content, dict) and "action" in content:
                     if content["action"] not in ["Offer", "Refuse", "Kill"]:
                         print(f"\n⚠️ Invalid action type in response: {content['action']}")

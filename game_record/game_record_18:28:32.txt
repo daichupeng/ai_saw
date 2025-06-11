@@ -1,0 +1,59 @@
+[18:28:32] === AI SAW GAME RECORD ===
+[18:28:32] Game Description: A game of survival, negotiation, and betrayal.
+[18:28:32] 
+Initial Players:
+[18:28:32]   - 陈志华:
+[18:28:32]     HP: 7
+[18:28:32]     Background: 你是45岁的房地产开发商陈志华。你极度理性冷酷，将一切视为可计算的商业交易，善于操控他人情绪但从不暴露真实感受。你靠强拆养老院发家致富，为了项目利润导致多名老人无家可归后病死，连亲兄弟都被你算计破产。在这场游戏中，你习惯成为主导者，会冷静分析每个人的价值并优先牺牲"无用"的人。
+[18:28:32]     Backstab Success Rate: 30.0%
+[18:28:32]   - 林小雨:
+[18:28:32]     HP: 7
+[18:28:32]     Background: 你是32岁的失业小学教师林小雨。为了给患白血病的7岁儿子筹治疗费，你挪用了学校救灾款被发现后失业，丈夫因无法承受压力自杀，留下你独自面对巨额债务。曾经温柔的你变得歇斯底里，情绪极度不稳定。你有强烈的求生欲望，认为为了孩子可以做任何事，道德观念已经彻底扭曲。在游戏中你容易情绪失控，会反复提及自己的孩子试图获得同情。
+[18:28:32]     Backstab Success Rate: 30.0%
+[18:28:32]   - 王大伟:
+[18:28:32]     HP: 7
+[18:28:32]     Background: 你是28岁的网约车司机王大伟。你沉迷网络赌博输光了所有积蓄和父母养老钱，为了还债偷取乘客遗失物品，甚至曾企图绑架富家女勒索但最终胆怯放弃。你极度胆小优柔寡断，总是寻求他人保护，善于察言观色投靠强者但关键时刻总会背叛。自卑感强烈却渴望被认可，在游戏中会不断寻求与最强势玩家结盟，容易被威胁而改变立场。
+[18:28:32]     Backstab Success Rate: 30.0%
+[18:28:32]   - 苏梦琪:
+[18:28:32]     HP: 7
+[18:28:32]     Background: 你是26岁的前护士苏梦琪。你曾是优秀的ICU护士，目睹太多因医疗腐败死去的病人后开始对收红包的医生进行"制裁"——在药物中添加有害物质，被发现后杀死了举报你的同事。你外表柔弱但内心极度坚韧狠毒，有强烈但扭曲的正义感，善于伪装无害实际城府极深。你对背叛和欺骗零容忍，报复心极强，会在游戏中暗中观察每个人并对你认为"邪恶"的玩家毫不留情。
+[18:28:32]     Backstab Success Rate: 30.0%
+[18:28:32]   - 张建文:
+[18:28:32]     HP: 7
+[18:28:32]     Background: 你是58岁的退休保安张建文。作为退伍军人，你在维和任务中失去战友患上PTSD，退休后做保安时因过度使用武力导致年轻窃贼重伤致残，但你认为自己在"维护正义"。你意志坚定但偏执狂躁，有强烈但扭曲的荣誉感和规则意识，容易被激怒且一旦愤怒就失去理智。在游戏中你会试图建立军事化秩序，对年轻玩家特别严厉，可能在情绪失控时做出冲动的致命决定。
+[18:28:32]     Backstab Success Rate: 30.0%
+[18:28:32] 
+==================================================
+
+[18:28:32] 
+🎲 ROUND 1
+[18:28:32]   Active Players:
+[18:28:32]     - 陈志华 (HP: 7)
+[18:28:32]     - 林小雨 (HP: 7)
+[18:28:32]     - 王大伟 (HP: 7)
+[18:28:32]     - 苏梦琪 (HP: 7)
+[18:28:32]     - 张建文 (HP: 7)
+[18:28:32] 
+💬 NEGOTIATION ATTEMPT 1
+[18:28:32]   Damage Required: 6
+[18:28:35] Negotiation Action - Player: 王大伟
+[18:28:35]       Thinking:  (Request ID: d491d2f4-526b-42ea-8e35-61984ee82a90)
+[18:28:35]       Speech: 诸位大侠，我愿献出2点HP，求求你们保护我一命，让我能继续在黑暗中找到一丝光明。我愿效忠于最强者，只求生存。 (Request ID: d491d2f4-526b-42ea-8e35-61984ee82a90)
+[18:28:35]     Action: Refuse (Request ID: d491d2f4-526b-42ea-8e35-61984ee82a90)
+[18:28:38]     Opinion Update - Observer: 陈志华, Subject: 王大伟, Request ID: 8a0f9a90-1fcc-47e6-b473-86eb8770c366 (Request ID: 8a0f9a90-1fcc-47e6-b473-86eb8770c366)
+[18:28:40]     Opinion Update - Observer: 林小雨, Subject: 王大伟, Request ID: adbc8967-fb06-4f6c-b7c6-8e607ed2eaf1 (Request ID: adbc8967-fb06-4f6c-b7c6-8e607ed2eaf1)
+[18:28:42]     Opinion Update - Observer: 苏梦琪, Subject: 王大伟, Request ID: 55879d64-b6a0-4297-ade0-0c11a2216953 (Request ID: 55879d64-b6a0-4297-ade0-0c11a2216953)
+[18:28:44]     Opinion Update - Observer: 张建文, Subject: 王大伟, Request ID: af1b8bf2-61c6-4e59-ae44-fa33c33e4dcb (Request ID: af1b8bf2-61c6-4e59-ae44-fa33c33e4dcb)
+[18:28:46] Negotiation Action - Player: 陈志华
+[18:28:46]       Thinking:  (Request ID: 092b0c4d-7f99-46d7-95d7-0b722c7c4cf4)
+[18:28:46]       Speech: 我不会轻易献祭，也不急于做出决定。让我们继续观察，看看谁能在这场游戏中立于不败之地。 (Request ID: 092b0c4d-7f99-46d7-95d7-0b722c7c4cf4)
+[18:28:46]     Action: Refuse (Request ID: 092b0c4d-7f99-46d7-95d7-0b722c7c4cf4)
+[18:28:48]     Opinion Update - Observer: 林小雨, Subject: 陈志华, Request ID: 8c291bfe-33a6-4525-95c9-df3ed09e18e5 (Request ID: 8c291bfe-33a6-4525-95c9-df3ed09e18e5)
+[18:28:50]     Opinion Update - Observer: 王大伟, Subject: 陈志华, Request ID: 620be2f8-a085-49ea-baa0-bc89cf4deaea (Request ID: 620be2f8-a085-49ea-baa0-bc89cf4deaea)
+[18:28:53]     Opinion Update - Observer: 苏梦琪, Subject: 陈志华, Request ID: 135a30fd-d8de-4dc8-a6fd-459bc5680dd3 (Request ID: 135a30fd-d8de-4dc8-a6fd-459bc5680dd3)
+[18:28:56]     Opinion Update - Observer: 张建文, Subject: 陈志华, Request ID: ce0dffc2-3d33-4bc6-a3af-50638bad3b8f (Request ID: ce0dffc2-3d33-4bc6-a3af-50638bad3b8f)
+[18:29:01] Negotiation Action - Player: 张建文
+[18:29:01]       Thinking:  (Request ID: 8de547f3-e611-4cb1-ba13-63618b5e7a0a)
+[18:29:01]       Speech: 诸位，面对这残酷的游戏，我们需要果断行动才能生存下去。我愿意献出3点HP，希望你们也能做出牺牲，让我们快速决定，以保证我们至少有些望生存下去。 (Request ID: 8de547f3-e611-4cb1-ba13-63618b5e7a0a)
+[18:29:01]     Action: Refuse (Request ID: 8de547f3-e611-4cb1-ba13-63618b5e7a0a)
+[18:29:04]     Opinion Update - Observer: 陈志华, Subject: 张建文, Request ID: 63a06601-3c9f-47ec-8043-8261c67c5b3c (Request ID: 63a06601-3c9f-47ec-8043-8261c67c5b3c)

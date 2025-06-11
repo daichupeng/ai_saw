@@ -12,7 +12,7 @@ from datetime import datetime
 game_time = datetime.now().strftime("%H:%M:%S")
 
 def log(message: str, indent: int = 0, request_id: Optional[str] = None,):
-            # Create game log file
+    # Create game log file
     record_dir = Path("game_record")
     record_dir.mkdir(exist_ok=True)
     
@@ -52,13 +52,13 @@ class Context:
     """Context for opinion updates about player actions."""
     event: EventType
     round_number: int
-    acting_player: str
-    target_player: Optional[str] = None
+    acting_player: str  # This will be the player's name for display
+    target_player: Optional[str] = None  # This will be the player's name for display
     damage_amount: Optional[float] = None
     speech: Optional[str] = None
-    successful_backstabbers: Set[str] = field(default_factory=set)
-    failed_backstabbers: Set[str] = field(default_factory=set)
-    loyal_players: Set[str] = field(default_factory=set)
+    successful_backstabbers: Set[str] = field(default_factory=set)  # These will be player names
+    failed_backstabbers: Set[str] = field(default_factory=set)  # These will be player names
+    loyal_players: Set[str] = field(default_factory=set)  # These will be player names
     total_damage_required: Optional[int] = None
     total_damage_offered: Optional[int] = None
     negotiation_attempt: Optional[int] = None
@@ -103,10 +103,10 @@ class Round:
     description: str = ""
     status: RoundStatus = RoundStatus.NOT_COMPLETED
     negotiation_attempts: int = 0
-    player_sequence: List[str] = field(default_factory=list)
-    active_players: List[str] = field(default_factory=list)
-    player_actions: Dict[str, PlayerAction] = field(default_factory=dict)
-    damage_taken: Dict[str, int] = field(default_factory=dict)
+    player_sequence: List[str] = field(default_factory=list)  # List of player IDs
+    active_players: List[str] = field(default_factory=list)  # List of player IDs
+    player_actions: Dict[str, PlayerAction] = field(default_factory=dict)  # player_id -> action
+    damage_taken: Dict[str, int] = field(default_factory=dict)  # player_id -> damage
 
     def reset_player_sequence(self, players: List[str]) -> None:
         """Randomize the player sequence for this round."""
@@ -125,21 +125,23 @@ class Round:
                   for action in self.player_actions.values())
 
     def get_kill_action(self) -> Optional[Tuple[str, PlayerAction]]:
-        """Get the player and action if there was a kill action."""
-        for player, action in self.player_actions.items():
+        """Get the player_id and action if there was a kill action."""
+        for player_id, action in self.player_actions.items():
             if action.action_type == "Kill":
-                return player, action
+                return player_id, action
         return None
 
 class Game:
     """Main game class that manages the game flow."""
     def __init__(self, players: List[Player], description: str = "", max_rounds: int = 10):
         self.description = description
-        self.players = {player.name: player for player in players}
+        self.players = {player.player_id: player for player in players}  # Use player_id as key
+        self.player_id_to_name = {player.player_id: player.name for player in players}  # Mapping for display
+        self.player_name_to_id = {player.name: player.player_id for player in players}  # Reverse mapping
         self.rounds: List[Round] = []
         self.current_round: Optional[Round] = None
         self.phase = GamePhase.NEGOTIATION
-        self.active_players = list(self.players.keys())
+        self.active_players = list(self.players.keys())  # List of player IDs
         self.max_rounds = max_rounds
 
     def start_new_round(self) -> None:
@@ -167,8 +169,8 @@ class Game:
         self.current_round.player_actions.clear()
         
         # Get actions from each player in sequence
-        for player_name in self.current_round.player_sequence:
-            player = self.players[player_name]
+        for player_id in self.current_round.player_sequence:
+            player = self.players[player_id]
             
             # Create game state for player decision
             game_state = {
@@ -176,39 +178,41 @@ class Game:
                 "damage_required": self.current_round.damage_required,
                 "negotiation_attempt": self.current_round.negotiation_attempts,
                 "player_states": {
-                    name: {"hp": self.players[name].hp}
-                    for name in self.active_players
+                    pid: {"hp": self.players[pid].hp}
+                    for pid in self.active_players
                 },
                 "previous_actions": [
                     {
-                        "player": name,
+                        "player": self.player_id_to_name[pid],  # Use name for display
                         "action_type": action.action_type,
                         "damage_amount": action.damage_amount,
-                        "target": action.target_player,
+                        "target": self.player_id_to_name[action.target_player_id] if action.target_player_id else None,
                         "speech": action.speech
                     }
-                    for name, action in self.current_round.player_actions.items()
-                ]
+                    for pid, action in self.current_round.player_actions.items()
+                ],
+                "player_name_to_id": self.player_name_to_id  # Add mapping for player to convert names to IDs
             }
             
             # Get player's action
             action = player.negotiate(game_state)
-            self.current_round.player_actions[player_name] = action
+            self.current_round.player_actions[player_id] = action
             
             # Log negotiation action with request ID
-            log(f"Negotiation Action - Player: {player_name}")
+            log(f"Negotiation Action - Player: {player.name}")
             log(f"Thinking: {action.thinking}", 3, action.request_id)
             log(f"Speech: {action.speech}", 3, action.request_id)
             log(f"Action: {action.action_type}", 2, action.request_id)
             if action.damage_amount:
                 log(f"Damage Amount: {action.damage_amount}", 3, action.request_id)
-            if action.target_player:
-                log(f"Target: {action.target_player}", 3, action.request_id)
+            if action.target_player_id:
+                target_name = self.player_id_to_name[action.target_player_id]
+                log(f"Target: {target_name}", 3, action.request_id)
 
             
             # Handle kill action
             if action.action_type == "Kill":
-                kill_success = self.handle_kill_action(player_name, action)
+                kill_success = self.handle_kill_action(player_id, action)
                 if kill_success:
                     return True  # End negotiation if kill was successful
                 # If kill failed, continue with next player
@@ -218,14 +222,14 @@ class Game:
             context = Context(
                 event=EventType.OFFER if action.action_type == "Offer" else EventType.REFUSE,
                 round_number=self.current_round.number,
-                acting_player=player_name,
+                acting_player=player.name,
                 damage_amount=action.damage_amount,
                 speech=action.speech,
                 total_damage_required=self.current_round.damage_required,
                 total_damage_offered=self.current_round.total_damage_offered(),
                 negotiation_attempt=self.current_round.negotiation_attempts
             )
-            self.update_all_opinions(player_name, context.event.value, context.to_dict())
+            self.update_all_opinions(player_id, context.event.value, context.to_dict())
 
         # Check if enough damage was offered
         if self.current_round.total_damage_offered() >= self.current_round.damage_required:
@@ -233,34 +237,34 @@ class Game:
             return True
         
         # Handle failed negotiation
-        if self.current_round.negotiation_attempts % 3 == 0:
+        if self.current_round.negotiation_attempts % 3 == 1 and self.current_round.negotiation_attempts != 1:
             self.apply_negotiation_failure_damage()
-            self.current_round.negotiation_attempts = 0
+            # self.current_round.negotiation_attempts = 0
             
         return False
 
-    def handle_kill_action(self, killer_name: str, action: PlayerAction) -> bool:
+    def handle_kill_action(self, killer_id: str, action: PlayerAction) -> bool:
         """Handle a kill action during negotiation."""
-        if not action.target_player:
+        if not action.target_player_id:
             raise ValueError("Kill action must have a target")
             
-        killer = self.players[killer_name]
-        target = self.players[action.target_player]
+        killer = self.players[killer_id]
+        target = self.players[action.target_player_id]
         
         # Validate kill conditions
         if killer.hp <= target.hp:
-            log(f"❌ Kill action failed: {killer_name} cannot kill {action.target_player} (invalid HP condition)")
+            log(f"❌ Kill action failed: {killer.name} cannot kill {target.name} (invalid HP condition)")
             
             # Create context for failed kill attempt
             context = Context(
                 event=EventType.KILL,
                 round_number=self.current_round.number,
-                acting_player=killer_name,
-                target_player=action.target_player,
+                acting_player=killer.name,
+                target_player=target.name,
                 speech=action.speech
             )
             # Update opinions about the failed kill attempt
-            self.update_all_opinions(killer_name, context.event.value, context.to_dict())
+            self.update_all_opinions(killer_id, context.event.value, context.to_dict())
             return False
             
         # Apply damage
@@ -271,12 +275,12 @@ class Game:
         context = Context(
             event=EventType.KILL,
             round_number=self.current_round.number,
-            acting_player=killer_name,
-            target_player=action.target_player,
+            acting_player=killer.name,
+            target_player=target.name,
             speech=action.speech
         )
-        self.update_all_opinions(action.target_player, context.event.value, context.to_dict())
-        self.eliminate_player(action.target_player)
+        self.update_all_opinions(killer_id, context.event.value, context.to_dict())
+        self.eliminate_player(action.target_player_id)
         
         # Complete round
         self.current_round.status = RoundStatus.COMPLETED
@@ -291,27 +295,27 @@ class Game:
         
         # Reset player sequence for execution phase
         self.current_round.reset_player_sequence([
-            player for player in self.current_round.player_sequence
-            if self.current_round.player_actions[player].action_type == "Offer"
+            player_id for player_id in self.current_round.player_sequence
+            if self.current_round.player_actions[player_id].action_type == "Offer"
         ])
         
-        successful_backstabs = []
-        failed_backstabs = []
-        loyal_players = []
+        successful_backstabbers = set()
+        failed_backstabbers = set()
+        loyal_players = set()
         
         # Handle backstab attempts
-        for player_name in self.current_round.player_sequence:
-            player = self.players[player_name]
-            action = self.current_round.player_actions[player_name]
+        for player_id in self.current_round.player_sequence:
+            player = self.players[player_id]
+            action = self.current_round.player_actions[player_id]
             
             # Create game state for backstab decision
             game_state = {
                 "round": self.current_round.number,
                 "your_damage": action.damage_amount,
                 "player_damages": {
-                    name: self.current_round.player_actions[name].damage_amount or 0
-                    for name in self.active_players
-                    if self.current_round.player_actions[name].action_type == "Offer"
+                    pid: self.current_round.player_actions[pid].damage_amount or 0
+                    for pid in self.active_players
+                    if self.current_round.player_actions[pid].action_type == "Offer"
                 }
             }
             
@@ -319,127 +323,135 @@ class Game:
             will_backstab, thinking, request_id = player.decide_backstab(game_state)
             
             # Log backstab decision with request ID
-            log(f"Backstab Decision - Player: {player_name}", 2, request_id)
+            log(f"Backstab Decision - Player: {player.name}", 2, request_id)
             log(f"Thinking: {thinking}", 3, request_id)
             log(f"Decision: {'Will Backstab' if will_backstab else 'Will Not Backstab'}", 3, request_id)
             
             if will_backstab:
                 success = random.random() < player.get_current_backstab_chance()
                 if success:
-                    successful_backstabs.append(player_name)
+                    successful_backstabbers.add(player.name)  # Use name for display
                     player.backstab_attempts += 1
-                    print(f"🗡️ {player_name}'s backstab succeeded!")
-                    log(f"{player_name}'s backstab succeeded!", 2, request_id)
+                    print(f"🗡️ {player.name}'s backstab succeeded!")
+                    log(f"{player.name}'s backstab succeeded!", 2, request_id)
                     
                     # Update opinions about successful backstab
                     context = Context(
                         event=EventType.BACKSTAB_SUCCESS,
                         round_number=self.current_round.number,
-                        acting_player=player_name,
+                        acting_player=player.name,
                         speech=thinking
                     )
-                    self.update_all_opinions(player_name, context.event.value, context.to_dict())
+                    self.update_all_opinions(player_id, context.event.value, context.to_dict())
                 else:
-                    failed_backstabs.append(player_name)
-                    print(f"❌ {player_name}'s backstab failed!")
-                    log(f"{player_name}'s backstab failed!", 2, request_id)
-                    self.apply_damage(player_name, action.damage_amount or 0)
+                    failed_backstabbers.add(player.name)  # Use name for display
+                    print(f"❌ {player.name}'s backstab failed!")
+                    log(f"{player.name}'s backstab failed!", 2, request_id)
+                    self.apply_damage(player_id, action.damage_amount or 0)
                     
                     # Update opinions about failed backstab
                     context = Context(
                         event=EventType.BACKSTAB_FAIL,
                         round_number=self.current_round.number,
-                        acting_player=player_name,
+                        acting_player=player.name,
                         speech=thinking
                     )
-                    self.update_all_opinions(player_name, context.event.value, context.to_dict())
+                    self.update_all_opinions(player_id, context.event.value, context.to_dict())
             else:
-                loyal_players.append(player_name)
-                print(f"✋ {player_name} chose not to backstab")
-                log(f"{player_name} chose not to backstab", 2, request_id)
-                self.apply_damage(player_name, action.damage_amount or 0)
+                loyal_players.add(player.name)  # Use name for display
+                print(f"✋ {player.name} chose not to backstab")
+                log(f"{player.name} chose not to backstab", 2, request_id)
+                self.apply_damage(player_id, action.damage_amount or 0)
         
         # Handle successful backstabs
-        if successful_backstabs:
+        if successful_backstabbers:
             remaining_players = [
-                name for name in self.active_players
-                if name not in successful_backstabs and 
-                self.current_round.player_actions[name].action_type == "Offer"
+                player_id for player_id in self.active_players
+                if self.player_id_to_name[player_id] not in successful_backstabbers and 
+                self.current_round.player_actions[player_id].action_type == "Offer"
             ]
             
             if remaining_players:
                 # Distribute damage from successful backstabbers
                 total_damage = sum(
-                    self.current_round.player_actions[name].damage_amount or 0
-                    for name in successful_backstabs
+                    self.current_round.player_actions[player_id].damage_amount or 0
+                    for player_id in self.active_players
+                    if self.player_id_to_name[player_id] in successful_backstabbers
                 )
                 damage_per_player = total_damage / len(remaining_players)
                 
-                for player_name in remaining_players:
-                    self.apply_damage(player_name, damage_per_player)
+                for player_id in remaining_players:
+                    self.apply_damage(player_id, damage_per_player)
             else:
                 # If everyone backstabbed successfully, last player takes all damage
-                last_player = successful_backstabs[-1]
+                last_player_id = self.player_name_to_id[list(successful_backstabbers)[-1]]
                 total_damage = sum(
-                    self.current_round.player_actions[name].damage_amount or 0
-                    for name in successful_backstabs
+                    self.current_round.player_actions[player_id].damage_amount or 0
+                    for player_id in self.active_players
+                    if self.player_id_to_name[player_id] in successful_backstabbers
                 )
-                self.apply_damage(last_player, total_damage)
+                self.apply_damage(last_player_id, total_damage)
         
         # Complete round
         self.current_round.status = RoundStatus.COMPLETED
 
-    def apply_damage(self, player_name: str, damage: float) -> None:
+    def apply_damage(self, player_id: str, damage: float) -> None:
         """Apply damage to a player."""
-        player = self.players[player_name]
+        player = self.players[player_id]
         player.hp -= damage
-        self.current_round.damage_taken[player_name] = damage
+        self.current_round.damage_taken[player_id] = damage
         
         if player.hp <= 0:
             player.hp = 0
-            self.eliminate_player(player_name)
+            self.eliminate_player(player_id)
 
     def apply_negotiation_failure_damage(self) -> None:
         """Apply damage to all players after 3 failed negotiations."""
         print("\n⚡ Three failed negotiations - applying 1 damage to all players")
-        for player_name in self.active_players:
-            self.apply_damage(player_name, 1)
+        for player_id in self.active_players:
+            self.apply_damage(player_id, 1)
 
-    def eliminate_player(self, player_name: str) -> None:
+    def eliminate_player(self, player_id: str) -> None:
         """Handle player elimination."""
-        if player_name in self.active_players:
-            self.active_players.remove(player_name)
+        if player_id in self.active_players:
+            self.active_players.remove(player_id)
+            player_name = self.player_id_to_name[player_id]
             print(f"\n💀 {player_name} has been eliminated!")
 
-    def update_all_opinions(self, target_player: str, action_type: str, context: Dict) -> None:
+    def update_all_opinions(self, target_player_id: str, action_type: str, context: Dict) -> None:
         """Update all players' opinions about an action."""
-        for player_name in self.active_players:
-            if player_name != target_player:
-                observer, subject, opinion, request_id = self.players[player_name].update_opinion(target_player, action_type, context)
-                log(f"Opinion Update - Observer: {observer}, Subject: {subject}, Request ID: {request_id}", 2, request_id)
+        target_name = self.player_id_to_name[target_player_id]
+        for observer_id in self.active_players:
+            if observer_id != target_player_id:
+                observer, subject, opinion, request_id = self.players[observer_id].update_opinion(
+                    target_player_id=target_player_id,
+                    target_player_name=target_name,
+                    action_type=action_type,
+                    context=context
+                )
+                log(f"Opinion Update - Observer: {observer}, Subject: {subject},{opinion}, Request ID: {request_id}, ")
 
     def is_game_over(self) -> bool:
         """Check if the game is over."""
         return len(self.active_players) <= 1 or len(self.rounds) > self.max_rounds
 
     def get_winner(self) -> Optional[str]:
-        """Get the winner of the game if there is one."""
-        return self.active_players[0] if len(self.active_players) == 1 else None
+        """Get the winner's name if there is one."""
+        if len(self.active_players) == 1:
+            return self.player_id_to_name[self.active_players[0]]
+        return None
 
     def play(self) -> str:
         """
         Play the game until completion.
         Returns the name of the winner.
         """
-
-        
-        
         # Initialize log file with game setup
         log("=== AI SAW GAME RECORD ===")
         log(f"Game Description: {self.description}")
         log("\nInitial Players:")
-        for name, player in self.players.items():
-            log(f"- {name}:", 1)
+        for player_id, player in self.players.items():
+            log(f"- {player.name}:", 1)
             log(f"HP: {player.hp}", 2)
             log(f"Background: {player.background_prompt}", 2)
             log(f"Backstab Success Rate: {player.backstab_success_rate * 100}%", 2)
@@ -449,9 +461,9 @@ class Game:
             self.start_new_round()
             log(f"\n🎲 ROUND {len(self.rounds)}")
             log("Active Players:", 1)
-            for player_name in self.active_players:
-                player = self.players[player_name]
-                log(f"- {player_name} (HP: {player.hp})", 2)
+            for player_id in self.active_players:
+                player = self.players[player_id]
+                log(f"- {player.name} (HP: {player.hp})", 2)
             
             # Negotiation phase
             while self.phase == GamePhase.NEGOTIATION:
@@ -464,15 +476,6 @@ class Game:
                 total_damage = self.current_round.total_damage_offered()
                 log(f"\nNegotiation Results:", 1)
                 log(f"Total Damage Offered: {total_damage}/{self.current_round.damage_required}", 2)
-                
-                # for player_name, action in self.current_round.player_actions.items():
-                #     log(f"- {player_name}:", 2)
-                #     log(f"Action: {action.action_type}", 3)
-                #     if action.damage_amount:
-                #         log(f"Damage: {action.damage_amount}", 3)
-                #     if action.target_player:
-                #         log(f"Target: {action.target_player}", 3)
-                #     log(f"Speech: {action.speech}", 3)
                 
                 if not success and self.current_round.negotiation_attempts >= 3:
                     log("\n⚡ NEGOTIATION FAILURE PENALTY", 1)
@@ -488,10 +491,12 @@ class Game:
             if self.current_round.status == RoundStatus.COMPLETED:
                 kill_action = self.current_round.get_kill_action()
                 if kill_action:
-                    killer, action = kill_action
+                    killer_id, action = kill_action
+                    killer_name = self.player_id_to_name[killer_id]
+                    target_name = self.player_id_to_name[action.target_player_id] if action.target_player_id else "Unknown"
                     log("\n💀 KILL ACTION", 1)
-                    log(f"Killer: {killer}", 2)
-                    log(f"Target: {action.target_player}", 2)
+                    log(f"Killer: {killer_name}", 2)
+                    log(f"Target: {target_name}", 2)
                     log(f"Reason: {action.speech}", 2)
                 continue
                 
@@ -501,22 +506,22 @@ class Game:
                 
                 # Record initial state
                 log("Initial State:", 1)
-                for name in self.active_players:
-                    player = self.players[name]
-                    damage = self.current_round.player_actions[name].damage_amount
-                    log(f"- {name}: HP={player.hp}, Promised Damage={damage}", 2)
+                for player_id in self.active_players:
+                    player = self.players[player_id]
+                    damage = self.current_round.player_actions[player_id].damage_amount
+                    log(f"- {player.name}: HP={player.hp}, Promised Damage={damage}", 2)
                 
                 self.handle_execution_phase()
                 
                 # Record results
                 log("\nExecution Results:", 1)
-                for name in self.current_round.player_sequence:
-                    player = self.players[name]
-                    damage_taken = self.current_round.damage_taken.get(name, 0)
-                    log(f"- {name}:", 2)
+                for player_id in self.current_round.player_sequence:
+                    player = self.players[player_id]
+                    damage_taken = self.current_round.damage_taken.get(player_id, 0)
+                    log(f"- {player.name}:", 2)
                     log(f"Final HP: {player.hp}", 3)
                     log(f"Damage Taken: {damage_taken}", 3)
-                    if name in self.active_players:
+                    if player_id in self.active_players:
                         log("Status: Survived", 3)
                     else:
                         log("Status: Eliminated", 3)
@@ -524,9 +529,9 @@ class Game:
             # End of round summary
             log("\n📊 END OF ROUND SUMMARY")
             log("Player Status:", 1)
-            for name, player in self.players.items():
-                status = "Active" if name in self.active_players else "Eliminated"
-                log(f"- {name}:", 2)
+            for player_id, player in self.players.items():
+                status = "Active" if player_id in self.active_players else "Eliminated"
+                log(f"- {player.name}:", 2)
                 log(f"HP: {player.hp}", 3)
                 log(f"Status: {status}", 3)
                 log(f"Backstab Attempts: {player.backstab_attempts}", 3)
@@ -537,13 +542,15 @@ class Game:
         if winner:
             log(f"\n👑 GAME OVER - {winner} WINS!")
             log("\nWinner Details:", 1)
-            winner_player = self.players[winner]
+            winner_id = self.player_name_to_id[winner]
+            winner_player = self.players[winner_id]
             log(f"Final HP: {winner_player.hp}", 2)
             log(f"Total Backstab Attempts: {winner_player.backstab_attempts}", 2)
             log("\nFinal Opinions:", 2)
-            for target, opinion in winner_player.opinions.items():
-                if target != winner:
-                    log(f"- {target}: {opinion}", 3)
+            for target_id, opinion in winner_player.opinions.items():
+                if target_id != winner_id:
+                    target_name = self.player_id_to_name[target_id]
+                    log(f"- {target_name}: {opinion}", 3)
             print(f"\n👑 Game Over! {winner} wins!")
             return winner
         else:
@@ -569,34 +576,39 @@ def main():
     # Create players with different personalities
     players = [
         Player(
-            name="陈志华",
+            player_id="chenzhihua",
+            name="chenzhihua",
             model="gpt-3.5-turbo",
-            background_prompt="你是个靠拆迁致富的地产商，为了项目利润曾强制拆除养老院，导致多名老人无家可归后病死。在商场上以无情著称，连亲兄弟都曾被他算计破产。"
+            background_prompt="你是45岁的房地产开发商陈志华。你极度理性冷酷，将一切视为可计算的商业交易，善于操控他人情绪但从不暴露真实感受。你靠强拆养老院发家致富，为了项目利润导致多名老人无家可归后病死，连亲兄弟都被你算计破产。在这场游戏中，你习惯成为主导者，会冷静分析每个人的价值并优先牺牲'无用'的人。"
         ),
         Player(
-            name="林小雨",
+            player_id="linxiaoyu",
+            name="linxiaoyu",
             model="gpt-3.5-turbo",
-            background_prompt="为了给患白血病的7岁儿子筹集治疗费，你挪用了学校的救灾款项，被发现后失业。丈夫因无法承受压力而自杀，你独自承担巨额债务。曾经温柔的你变得歇斯底里。"
+            background_prompt="你是32岁的失业小学教师林小雨。为了给患白血病的7岁儿子筹治疗费，你挪用了学校救灾款被发现后失业，丈夫因无法承受压力自杀，留下你独自面对巨额债务。曾经温柔的你变得歇斯底里，情绪极度不稳定。你有强烈的求生欲望，认为为了孩子可以做任何事，道德观念已经彻底扭曲。在游戏中你容易情绪失控，会反复提及自己的孩子试图获得同情。"
         ),
         Player(
-            name="王大伟",
+            player_id="wangdawei",
+            name="wangdawei",
             model="gpt-3.5-turbo",
-            background_prompt="你沉迷网络赌博，输光了家里的所有积蓄和父母的养老钱。为了还债，你偷偷将乘客遗失的贵重物品据为己有，甚至曾企图绑架一名富家女孩勒索赎金，但最终胆怯放弃。"
+            background_prompt="你是28岁的网约车司机王大伟。你沉迷网络赌博输光了所有积蓄和父母养老钱，为了还债偷取乘客遗失物品，甚至曾企图绑架富家女勒索但最终胆怯放弃。你极度胆小优柔寡断，总是寻求他人保护，善于察言观色投靠强者但关键时刻总会背叛。自卑感强烈却渴望被认可，在游戏中会不断寻求与最强势玩家结盟，容易被威胁而改变立场。"
         ),
         Player(
-            name="苏梦琪",
+            player_id="sumengqi",
+            name="sumengqi",
             model="gpt-3.5-turbo",
-            background_prompt="你曾是优秀的ICU护士，目睹了太多因为医疗腐败而死去的病人。你开始对那些收红包、不负责任的医生进行制裁——在他们的药物中添加有害物质。被发现后，你杀死了举报你的同事。"
+            background_prompt="你是26岁的前护士苏梦琪。你曾是优秀的ICU护士，目睹太多因医疗腐败死去的病人后开始对收红包的医生进行'制裁'——在药物中添加有害物质，被发现后杀死了举报你的同事。你外表柔弱但内心极度坚韧狠毒，有强烈但扭曲的正义感，善于伪装无害实际城府极深。你对背叛和欺骗零容忍，报复心极强，会在游戏中暗中观察每个人并对你认为'邪恶'的玩家毫不留情。"
         ),
         Player(
-            name="张建文",
+            player_id="zhangjianwen",
+            name="zhangjianwen",
             model="gpt-3.5-turbo",
-            background_prompt="你是个退伍军人，曾在维和任务中失去战友而患上PTSD。退休后做保安期间，因为过度使用武力导致一名年轻窃贼重伤致残。你认为自己是维护正义，对质疑他的人充满敌意。"
+            background_prompt="你是58岁的退休保安张建文。作为退伍军人，你在维和任务中失去战友患上PTSD，退休后做保安时因过度使用武力导致年轻窃贼重伤致残，但你认为自己在'维护正义'。你意志坚定但偏执狂躁，有强烈但扭曲的荣誉感和规则意识，容易被激怒且一旦愤怒就失去理智。在游戏中你会试图建立军事化秩序，对年轻玩家特别严厉，可能在情绪失控时做出冲动的致命决定。"
         )
     ]
     
     # Create and run the game
-    game = Game(players=players, description="A game of survival, negotiation, and betrayal.", max_rounds=1)
+    game = Game(players=players, description="A game of survival, negotiation, and betrayal.", max_rounds=6)
     winner = game.play()
     
     print(f"\n🏆 Game Over! Winner: {winner}")
@@ -604,15 +616,16 @@ def main():
     # Print final statistics
     print("\n📊 Final Statistics:")
     print("=" * 50)
-    for player_name, player in game.players.items():
-        status = "🏆 WINNER" if player_name == winner else "💀 ELIMINATED"
-        print(f"\n{player_name} ({status}):")
+    for player_id, player in game.players.items():
+        status = "🏆 WINNER" if player_id in game.active_players else "💀 ELIMINATED"
+        print(f"\n{player.name} ({status}):")
         print(f"Final HP: {player.hp}")
         print(f"Backstab Attempts: {player.backstab_attempts}")
         print("\nFinal Opinions:")
-        for target, opinion in player.opinions.items():
-            if target != player_name:
-                print(f"- {target}: {opinion}")
+        for target_id, opinion in player.opinions.items():
+            if target_id != player_id:
+                target_name = game.player_id_to_name[target_id]
+                print(f"- {target_name}: {opinion}")
 
 if __name__ == "__main__":
     try:

@@ -23,5 +23,5 @@
 2. "content": 一个JSON object
    - "action": 只能是["Offer", "Refuse", "Kill"]其中之一
    - "damage": 数字，表示你愿意献祭的HP数量。只有action是Offer才填写。
-   - "target": 目标，表示你希望处决的目标。只有action是Kill才填写。记住你只能成功处决HP少于你的玩家。
+   - "target": 目标，表示你希望处决的目标。只有action是Kill才填写。记住你只能成功处决HP少于你的玩家。目标只能从还存活的玩家ID中选择。
    - "speech": 你对其他玩家的发言。

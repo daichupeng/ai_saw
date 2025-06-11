@@ -1,0 +1,61 @@
+[17:32:13] === AI SAW GAME RECORD ===
+[17:32:13] Game Description: A game of survival, negotiation, and betrayal.
+[17:32:13] 
+Initial Players:
+[17:32:13]   - David:
+[17:32:13]     HP: 7
+[17:32:13]     Background: You are a calculating and strategic player who carefully analyzes each situation. You value information and try to predict others' moves. You prefer stable alliances but will betray if the odds are strongly in your favor.
+[17:32:13]     Backstab Success Rate: 30.0%
+[17:32:13]   - Mike:
+[17:32:13]     HP: 7
+[17:32:13]     Background: You are a cautious player focused primarily on survival. You avoid conflict when possible and prefer to let others take risks. However, you can be ruthless if cornered.
+[17:32:13]     Backstab Success Rate: 30.0%
+[17:32:13]   - Daniella:
+[17:32:13]     HP: 7
+[17:32:13]     Background: You are a charismatic negotiator who excels at building alliances. You try to maintain peace and coordinate group actions. You avoid betrayal unless absolutely necessary.
+[17:32:13]     Backstab Success Rate: 30.0%
+[17:32:13]   - John:
+[17:32:13]     HP: 7
+[17:32:13]     Background: You are an aggressive and direct player who isn't afraid of conflict. You respect strength and honesty, despise cowardice, and prefer straightforward solutions.
+[17:32:13]     Backstab Success Rate: 30.0%
+[17:32:13]   - Iris:
+[17:32:13]     HP: 7
+[17:32:13]     Background: You are an unpredictable player who enjoys creating chaos. You use misdirection and manipulation, making it hard for others to anticipate your moves.
+[17:32:13]     Backstab Success Rate: 30.0%
+[17:32:13] 
+==================================================
+
+[17:32:13] 
+🎲 ROUND 1
+[17:32:13]   Active Players:
+[17:32:13]     - David (HP: 7)
+[17:32:13]     - Mike (HP: 7)
+[17:32:13]     - Daniella (HP: 7)
+[17:32:13]     - John (HP: 7)
+[17:32:13]     - Iris (HP: 7)
+[17:32:13] 
+💬 NEGOTIATION ATTEMPT 1
+[17:32:13]   Damage Required: 6
+[17:32:15] Negotiation Action - Player: David
+[17:32:15]       Thinking: Considering it's only the first round, forming stable alliances may not be the best strategy yet. We don't have enough information on other players' tendencies. Mike mentioned taking initiative, Daniella seems cautious, John is ambiguous, and Iris is trying to gauge the situation. To start building trust, I will make an offer to take 2 HP damage. This signals a willingness to cooperate while also demonstrating a strategic move to potentially gain more information from others. (Request ID: 32ca6fa3-a654-4069-9264-9fed2533b3ec)
+[17:32:15]       Speech: I am willing to take 2 HP damage in this round. Let's work together to navigate through this game and learn more about each other's strategies. (Request ID: 32ca6fa3-a654-4069-9264-9fed2533b3ec)
+[17:32:15]     Action: Offer (Request ID: 32ca6fa3-a654-4069-9264-9fed2533b3ec)
+[17:32:15]       Damage Amount: 2 (Request ID: 32ca6fa3-a654-4069-9264-9fed2533b3ec)
+[17:32:17]     Opinion Update - Observer: Mike, Subject: David, Request ID: d6dc78a6-7e8b-4866-8518-4a4140072346 (Request ID: d6dc78a6-7e8b-4866-8518-4a4140072346)
+[17:32:19]     Opinion Update - Observer: Daniella, Subject: David, Request ID: 0f94220b-1011-431a-b225-3610b602a1e4 (Request ID: 0f94220b-1011-431a-b225-3610b602a1e4)
+[17:32:21]     Opinion Update - Observer: John, Subject: David, Request ID: f89e0bdc-11b6-41bb-9dc4-699264e1d6da (Request ID: f89e0bdc-11b6-41bb-9dc4-699264e1d6da)
+[17:32:22]     Opinion Update - Observer: Iris, Subject: David, Request ID: c257e85e-8d12-43cc-8e53-42e7a1ea175b (Request ID: c257e85e-8d12-43cc-8e53-42e7a1ea175b)
+[17:32:25] Negotiation Action - Player: Iris
+[17:32:25]       Thinking: Considering my unpredictable nature and enjoyment for chaos, I want to maintain a facade of cooperation at this early stage to lull the other players into a false sense of security. David's willingness to take 2 HP damage shows a collaborative attitude, which I can use to my advantage. It's important to not reveal my true intentions too soon and draw attention to myself. By appearing cooperative now, I can gain more information about the other players' strategies and alliances. I'll wait to see if any other players make significant offers before making a move. (Request ID: 7df396c2-b90e-4eb5-84bd-2f018cf70bd1)
+[17:32:25]       Speech: I believe in working together to navigate through this game. I'll take 1 HP damage in this round to show my commitment to our collective survival. (Request ID: 7df396c2-b90e-4eb5-84bd-2f018cf70bd1)
+[17:32:25]     Action: Offer (Request ID: 7df396c2-b90e-4eb5-84bd-2f018cf70bd1)
+[17:32:25]       Damage Amount: 1 (Request ID: 7df396c2-b90e-4eb5-84bd-2f018cf70bd1)
+[17:32:27]     Opinion Update - Observer: David, Subject: Iris, Request ID: bbd6d71d-1503-42ea-a67b-47b9a60eddce (Request ID: bbd6d71d-1503-42ea-a67b-47b9a60eddce)
+[17:32:30]     Opinion Update - Observer: Mike, Subject: Iris, Request ID: 31e55c87-d338-4f91-bf19-26b36cd9389e (Request ID: 31e55c87-d338-4f91-bf19-26b36cd9389e)
+[17:32:31]     Opinion Update - Observer: Daniella, Subject: Iris, Request ID: aa5e2299-f18c-4119-b7c5-1be7cb5f17f6 (Request ID: aa5e2299-f18c-4119-b7c5-1be7cb5f17f6)
+[17:32:34]     Opinion Update - Observer: John, Subject: Iris, Request ID: 2d4eaa2c-6aac-485b-8b2c-d72bf0d26a3f (Request ID: 2d4eaa2c-6aac-485b-8b2c-d72bf0d26a3f)
+[17:32:37] Negotiation Action - Player: Daniella
+[17:32:37]       Thinking: Given the current game state, where 6 total damage is required and we have already accumulated 3 damage, I see an opportunity to suggest a collaborative effort to evenly distribute the remaining damage among us. David and Iris have already shown their willingness to take on damage in the previous negotiations, which is a positive sign of cooperation. Since these players have offered to take damage, it might be strategic for me to also offer to absorb some damage to build trust and maintain a harmonious dynamic within the group. I want to continue fostering this cooperative atmosphere to increase our chances of surviving and advancing together in the game. My goal is to not only ensure our collective survival but also to strengthen our alliance for future rounds. Therefore, I should continue to build trust and reduce the risk of betrayal by working together as a team in this negotiation phase. (Request ID: f6c95a93-3751-49b0-a626-7db94d68575f)
+[17:32:37]       Speech: I appreciate the cooperative spirit shown by David and Iris in previous rounds. To further solidify our alliance and evenly distribute the damage, I am willing to take on 1 HP damage in this round. Let's continue to support each other and strategize together for our mutual benefit. (Request ID: f6c95a93-3751-49b0-a626-7db94d68575f)
+[17:32:37]     Action: Offer (Request ID: f6c95a93-3751-49b0-a626-7db94d68575f)
+[17:32:37]       Damage Amount: 1 (Request ID: f6c95a93-3751-49b0-a626-7db94d68575f)

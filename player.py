@@ -13,7 +13,7 @@ class PlayerAction:
     """Class to represent a player's action during negotiation."""
     action_type: ActionType
     damage_amount: Optional[int] = None  # For Offer action
-    target_player: Optional[str] = None  # For Kill action
+    target_player_id: Optional[str] = None  # For Kill action, using player_id instead of name
     thinking: str = ""
     speech: str = ""
     request_id: Optional[str] = None  # Request ID from LLM response
@@ -23,6 +23,7 @@ class Player:
     """Class representing a player in the AI Saw game."""
     
     # Required initialization attributes
+    player_id: str  # Unique identifier for the player
     name: str
     model: str
     background_prompt: str
@@ -30,7 +31,7 @@ class Player:
     # Optional initialization attributes with defaults
     hp: int = 7
     backstab_success_rate: float = 0.30
-    opinions: Dict[str, str] = field(default_factory=dict)  # player_name -> opinion (descriptive string)
+    opinions: Dict[str, str] = field(default_factory=dict)  # player_id -> opinion (descriptive string)
     backstab_attempts: int = 0
     
     # LLM client for decision making
@@ -84,78 +85,57 @@ class Player:
         self.hp = max(0, self.hp - amount)
         return self.hp == 0
     
-    def update_opinion(self, player_name: str, action_type: str, context: Dict) -> Tuple[str, str, str, str]:
+    def update_opinion(self, target_player_id: str, target_player_name: str, action_type: str, context: Dict) -> Tuple[str, str, str, str]:
         """
         Update opinion about another player based on their actions.
         
         Args:
-            player_name: Name of the player to update opinion about
+            target_player_id: ID of the player to update opinion about
+            target_player_name: Name of the player to update opinion about (for display)
             action_type: Type of action they took
             context: Additional context about the action
             
         Returns:
             Tuple[str, str, str, str]: (observer_name, subject_name, opinion, request_id)
-            - observer_name: Name of the player making the observation
-            - subject_name: Name of the player being observed
-            - opinion: The updated opinion content
-            - request_id: The unique identifier for this opinion update request
         """
         prompt = self._prompt_templates["opinion_update"].format(
             name=self.name,
             background_prompt=self.background_prompt,
-            target_player=player_name,
+            target_player=target_player_name,  # Use name for display in prompts
             action_type=action_type,
-            context=context,
-            current_opinion=self.opinions.get(player_name, "No previous opinion")
+            context=json.dumps(context, ensure_ascii=False),  # Convert context to string
+            current_opinion=self.opinions.get(target_player_id, "No previous opinion")
         )
         
         response = self._llm_client.get_response(prompt)
         
-        opinion = ""
         try:
-            # First try to parse the content as JSON
-            if isinstance(response.content, str):
-                content = json.loads(response.content)
-            else:
-                content = response.content
+            content = response.content
+            if isinstance(content, str):
+                # Remove markdown code block if present
+                content = content.strip()
+                if content.startswith("```json"):
+                    content = content[7:]
+                if content.endswith("```"):
+                    content = content[:-3]
+                content = content.strip()
                 
-            # Extract the opinion from the content
+                try:
+                    content = json.loads(content)
+                except json.JSONDecodeError as e:
+                    print(f"\n⚠️ Failed to parse response as JSON: {e}")
+                    print(f"Raw response: {response.content}")
+                    return self.name, target_player_name, "", response.request_id
+            
             opinion = content.get("opinion", "")
-                
-            # Update the opinion if we found one
-            if opinion:
-                self.opinions[player_name] = opinion
-                print(f"\n💭 Successfully parsed and stored opinion: {opinion}")
-                
-                # Log the successful update for test log
-                if hasattr(self, '_current_test_log'):
-                    self._current_test_log.append({
-                        "stage": "Opinion Update Response",
-                        "description": "Successfully parsed and stored opinion",
-                        "raw_response": response.content,
-                        "parsed_opinion": opinion
-                    })
-            else:
-                print("\n⚠️ No opinion found in parsed content")
-                
-        except json.JSONDecodeError as e:
-            print(f"\n⚠️ Failed to parse JSON response: {str(e)}")
-            # Fallback to using the entire content as the opinion
-            if response.content:
-                opinion = response.content.strip()
-                self.opinions[player_name] = opinion
-                print(f"\n💭 Stored raw content as opinion: {opinion}")
+            print(f"opinion: {opinion}")
+            self.opinions[target_player_id] = opinion  # Store opinion using player_id
+            
+            return self.name, target_player_name, opinion, response.request_id
+            
         except Exception as e:
-            print(f"\n❌ Error updating opinion: {str(e)}")
-            # Store the raw content as opinion in case of other errors
-            if response.content:
-                opinion = response.content.strip()
-                self.opinions[player_name] = opinion
-                print(f"\n💭 Stored raw content as opinion due to error: {opinion}")
-            else:
-                opinion = "Error forming opinion"
-        
-        return self.name, player_name, opinion, response.request_id
+            print(f"\n⚠️ Error updating opinion: {str(e)}")
+            return self.name, target_player_name, "", response.request_id
     
     def negotiate(self, game_state: Dict) -> PlayerAction:
         """
@@ -269,7 +249,7 @@ class Player:
             action = PlayerAction(
                 action_type="Refuse",
                 thinking=response.thinking,
-                speech="I need more time to think about this."
+                speech="我需要更多时间思考。"
             )
             
             # Get content as dictionary
@@ -282,7 +262,14 @@ class Player:
             if "action" in content and content["action"] in ["Offer", "Refuse", "Kill"]:
                 action.action_type = content["action"]
                 action.damage_amount = content.get("damage")
-                action.target_player = content.get("target")
+                # Convert target name to target_id if Kill action
+                if action.action_type == "Kill" and "target" in content:
+                    target_name = content["target"]
+                    # Game state should include a name to id mapping
+                    if "player_name_to_id" in game_state:
+                        action.target_player_id = target_name
+                    else:
+                        print("\n⚠️ Missing player_name_to_id mapping in game state")
                 action.speech = content.get("speech", "")
                 action.thinking = response.thinking
             else:
@@ -296,7 +283,7 @@ class Player:
             return PlayerAction(
                 action_type="Refuse",
                 thinking=f"Error parsing response: {str(e)}",
-                speech="I need more time to think about this."
+                speech="我需要更多时间思考。"
             )
     
     def _format_player_states(self, player_states: Dict) -> str:

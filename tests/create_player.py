@@ -85,6 +85,7 @@ def create_test_player():
     # Create player
     try:
         player = Player(
+            player_id="test_player_1",
             name="TestPlayer",
             model="gpt-3.5-turbo",
             background_prompt="You are a strategic and cautious player who values survival above all else. "
@@ -95,6 +96,7 @@ def create_test_player():
             "stage": "Player Creation",
             "description": "Successfully created player instance",
             "parsed_response": {
+                "player_id": player.player_id,
                 "name": player.name,
                 "model": player.model,
                 "hp": player.hp,
@@ -116,15 +118,15 @@ def create_test_player():
 def test_negotiate(player: Player, log_entries: list):
     """Test the player's negotiate function with a mock game state."""
     
-    # Create a mock game state
+    # Create a mock game state with player IDs
     game_state = {
         "round_number": 2,
         "damage_required": 4,
         "negotiation_attempt": 1,
         "player_states": {
-            "Player2": {"hp": 6},
-            "Player3": {"hp": 4},
-            "Player4": {"hp": 5}
+            "player_2": {"hp": 6},
+            "player_3": {"hp": 4},
+            "player_4": {"hp": 5}
         },
         "previous_actions": [
             {
@@ -138,7 +140,12 @@ def test_negotiate(player: Player, log_entries: list):
                 "action_type": "Refuse",
                 "speech": "I'm too low on health to take any damage this round."
             }
-        ]
+        ],
+        "player_name_to_id": {
+            "Player2": "player_2",
+            "Player3": "player_3",
+            "Player4": "player_4"
+        }
     }
     
     log_entries.append({
@@ -176,7 +183,7 @@ def test_negotiate(player: Player, log_entries: list):
             "parsed_response": {
                 "action_type": action.action_type,
                 "damage_amount": action.damage_amount,
-                "target_player": action.target_player,
+                "target_player_id": action.target_player_id,
                 "speech": action.speech,
                 "thinking": action.thinking
             }
@@ -186,8 +193,8 @@ def test_negotiate(player: Player, log_entries: list):
         print(f"Action Type: {action.action_type}")
         if action.damage_amount is not None:
             print(f"Damage Amount: {action.damage_amount}")
-        if action.target_player is not None:
-            print(f"Target Player: {action.target_player}")
+        if action.target_player_id is not None:
+            print(f"Target Player ID: {action.target_player_id}")
         print(f"Speech: {action.speech}")
         print("\nThinking Process:")
         print(action.thinking)
@@ -235,7 +242,7 @@ def test_opinion_update(player: Player, log_entries: list) -> None:
             target_player="Player2",
             action_type="protect",
             context=context,
-            current_opinion=player.opinions.get("Player2", "No previous opinion")
+            current_opinion=player.opinions.get("player_2", "No previous opinion")
         )
         
         # Log the prompt
@@ -245,147 +252,123 @@ def test_opinion_update(player: Player, log_entries: list) -> None:
             "prompt": raw_prompt
         })
         
-        # Temporarily attach the log entries to the player for response logging
-        player._current_test_log = log_entries
+        # Update opinion using player ID
+        observer, subject, opinion, request_id = player.update_opinion(
+            target_player_id="player_2",
+            target_player_name="Player2",
+            action_type="protect",
+            context=context
+        )
         
-        # Update opinion about Player2's protective action
-        player.update_opinion("Player2", "protect", context)
-        
-        # Remove the temporary log entries reference
-        delattr(player, '_current_test_log')
-        
-        # Log the updated opinion and response
-        updated_opinion = player.opinions.get("Player2", "No opinion formed")
-        print(f"\n✨ Updated opinion about Player2: {updated_opinion}")
-        
-        # Add final results to log
+        # Log the results
         log_entries.append({
-            "stage": "Opinion Update Results",
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "description": "Opinion update completed",
+            "stage": "Opinion Update Result",
+            "description": "Successfully updated opinion",
             "parsed_response": {
-                "context": context,
-                "updated_opinion": updated_opinion,
-                "all_opinions": player.opinions
+                "observer": observer,
+                "subject": subject,
+                "opinion": opinion,
+                "request_id": request_id
             }
         })
         
+        print("\n✅ Opinion updated:")
+        print(f"Observer: {observer}")
+        print(f"Subject: {subject}")
+        print(f"Opinion: {opinion}")
+        print(f"Request ID: {request_id}")
+        
     except Exception as e:
-        error_msg = f"Error in opinion update test: {str(e)}"
-        print(f"\n❌ {error_msg}")
         log_entries.append({
-            "stage": "Opinion Update Error",
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "description": error_msg,
+            "stage": "Opinion Update",
+            "description": "Failed to update opinion",
             "error": str(e)
         })
-        # Clean up temporary log entries reference if error occurs
-        if hasattr(player, '_current_test_log'):
-            delattr(player, '_current_test_log')
-        raise
+        print(f"\n❌ Error during opinion update: {str(e)}")
 
 def test_backstab(player: Player, log_entries: list) -> None:
     """Test the backstab decision functionality."""
     print("\n🗡️ Testing Backstab Decision...")
     
-    # Add test entry
+    # Create mock game state for backstab
+    game_state = {
+        "round": 3,
+        "your_damage": 2,
+        "player_damages": {
+            "player_2": 1,
+            "player_3": 2,
+            "player_4": 1
+        }
+    }
+    
     log_entries.append({
-        "stage": "Backstab Test",
-        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "description": "Testing backstab decision during execution phase"
+        "stage": "Backstab Test Setup",
+        "description": "Created mock game state for backstab decision",
+        "parsed_response": game_state
     })
     
     try:
-        # Test scenario: Player is considering backstabbing during execution
-        game_state = {
-            "round": 2,
-            "your_damage": 1,  # You agreed to take 1 damage
-            "player_damages": {
-                "Player2": 2,  # Player2 agreed to take more damage
-                "Player3": 0,  # Player3 refused any damage
-                "Player4": 1   # Player4 agreed to take some damage
-            }
-        }
+        print("\n🤔 Making backstab decision...")
+        will_backstab, thinking, request_id = player.decide_backstab(game_state)
         
-        print("\n📊 Testing backstab decision with game state:")
-        print(f"Game State: {json.dumps(game_state, indent=2)}")
-        
-        # Get the raw prompt that will be sent to the LLM
-        raw_prompt = player._prompt_templates["backstab"].format(
-            name=player.name,
-            background_prompt=player.background_prompt,
-            hp=player.hp,
-            backstab_chance=player.get_current_backstab_chance() * 100,
-            your_damage=game_state['your_damage'],
-            player_damages=player._format_player_damages(game_state['player_damages']),
-            opinions=player._format_opinions()
-        )
-        
-        # Log the prompt
         log_entries.append({
-            "stage": "Backstab Prompt",
-            "description": "Generated backstab decision prompt",
-            "prompt": raw_prompt
-        })
-        
-        # Temporarily attach the log entries to the player for response logging
-        player._current_test_log = log_entries
-        
-        # Make backstab decision
-        decision, thinking = player.decide_backstab(game_state)
-        
-        # Remove the temporary log entries reference
-        delattr(player, '_current_test_log')
-        
-        # Print the decision
-        print(f"\n🤔 Backstab Decision: {'Yes' if decision else 'No'}")
-        print(f"Thinking Process: {thinking}")
-        
-        # Add results to log
-        log_entries.append({
-            "stage": "Backstab Results",
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "description": "Backstab decision completed",
+            "stage": "Backstab Decision",
+            "description": "Successfully made backstab decision",
             "parsed_response": {
-                "decision": decision,
+                "will_backstab": will_backstab,
                 "thinking": thinking,
-                "game_state": game_state,
-                "backstab_chance": player.get_current_backstab_chance() * 100
+                "request_id": request_id
             }
         })
+        
+        print("\n✅ Decision made:")
+        print(f"Will Backstab: {will_backstab}")
+        print("\nThinking Process:")
+        print(thinking)
+        print(f"\nRequest ID: {request_id}")
         
     except Exception as e:
-        error_msg = f"Error in backstab test: {str(e)}"
-        print(f"\n❌ {error_msg}")
         log_entries.append({
-            "stage": "Backstab Error",
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "description": error_msg,
+            "stage": "Backstab Decision",
+            "description": "Failed to make backstab decision",
             "error": str(e)
         })
-        # Clean up temporary log entries reference if error occurs
-        if hasattr(player, '_current_test_log'):
-            delattr(player, '_current_test_log')
-        raise
+        print(f"\n❌ Error during backstab decision: {str(e)}")
+
+def main():
+    """Run all player tests."""
+    print("\n🎮 Starting Player Tests")
+    
+    # Create output directory if it doesn't exist
+    output_dir = project_root / "test_output"
+    output_dir.mkdir(exist_ok=True)
+    
+    # Create test player
+    player, log_entries = create_test_player()
+    if not player:
+        print("\n❌ Failed to create test player")
+        save_test_log(log_entries, output_dir / "test_log.txt")
+        return
+    
+    print("\n✅ Test player created successfully")
+    
+    # Run negotiation test
+    test_negotiate(player, log_entries)
+    
+    # Run opinion update test
+    test_opinion_update(player, log_entries)
+    
+    # Run backstab test
+    test_backstab(player, log_entries)
+    
+    # Save test log
+    save_test_log(log_entries, output_dir / "test_log.txt")
+    print("\n📝 Test log saved to test_output/test_log.txt")
 
 if __name__ == "__main__":
-    # Initialize log entries list
-    log_entries = []
-    
-    # Create player
-    player, creation_logs = create_test_player()
-    log_entries.extend(creation_logs)
-    
-    if player:
-        # Test negotiation
-        # test_negotiate(player, log_entries)
-        test_opinion_update(player, log_entries)
-        test_backstab(player, log_entries)
-        
-        # Save test results
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_file = project_root / "tests" / f"player_test_log_{timestamp}.txt"
-        save_test_log(log_entries, output_file)
-        print(f"\n📝 Test log saved to: {output_file}")
-    else:
-        print("\n❌ Tests aborted due to player creation failure") 
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\n\n⚠️ Tests interrupted by user")
+    except Exception as e:
+        print(f"\n\n❌ Error during tests: {str(e)}") 
