@@ -4,6 +4,8 @@
 - 你的HP 是 {hp}
 - 你背刺成功的几率是 {backstab_chance}%
 - 你愿意献祭 {your_damage} HP
+- 你的当前心理状态: {current_mindset}
+
 
 其他玩家愿意献祭的HP：
 {player_damages}

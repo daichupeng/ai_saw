@@ -33,6 +33,7 @@ class Player:
     backstab_success_rate: float = 0.30
     opinions: Dict[str, str] = field(default_factory=dict)  # player_id -> opinion (descriptive string)
     backstab_attempts: int = 0
+    mindset: str = ""  # Current psychological state of the player
     
     # LLM client for decision making
     _llm_client: Optional[LLMClient] = None
@@ -54,7 +55,8 @@ class Player:
         template_files = {
             "negotiation": "negotiation.txt",
             "backstab": "backstab.txt",
-            "opinion_update": "opinion_update.txt"
+            "opinion_update": "opinion_update.txt",
+            "mindset": "mindset.txt"
         }
         
         for key, filename in template_files.items():
@@ -136,6 +138,7 @@ class Player:
                 - player_states: Dict of player states (hp, etc.)
                 - negotiation_attempt: Which attempt this is at negotiating
                 - previous_actions: List of previous actions in this negotiation
+                - current_mindset: Player's current psychological state
                 
         Returns:
             PlayerAction containing the decision, speech, and thinking process
@@ -147,6 +150,8 @@ class Player:
             round_number=game_state['round_number'],
             damage_required=game_state['damage_required'],
             negotiation_attempt=game_state['negotiation_attempt'],
+            scenario=game_state.get('scenario', ''),
+            current_mindset=game_state.get('current_mindset', self.mindset or '尚未形成明确的心理状态'),
             player_states=self._format_player_states(game_state['player_states']),
             previous_actions=self._format_previous_actions(game_state['previous_actions']),
             opinions=self._format_opinions()
@@ -173,6 +178,13 @@ class Player:
         """
         Decide whether to attempt a backstab during execution phase.
         
+        Args:
+            game_state: Current state of the game including:
+                - round: Current round number
+                - your_damage: Amount of damage you promised
+                - player_damages: Dict of player damages
+                - current_mindset: Player's current psychological state
+        
         Returns:
             Tuple[bool, str, str]: (backstab decision, thinking process, request_id)
         """
@@ -182,6 +194,7 @@ class Player:
             hp=self.hp,
             backstab_chance=self.get_current_backstab_chance() * 100,
             your_damage=game_state.get('your_damage', 0),
+            current_mindset=game_state.get('current_mindset', self.mindset or '尚未形成明确的心理状态'),
             player_damages=self._format_player_damages(game_state['player_damages']),
             opinions=self._format_opinions()
         )
@@ -224,33 +237,57 @@ class Player:
                 speech="我需要更多时间思考。"
             )
             
-            # Handle nested content structure
-            content = response.content.get("content", {})
-            if not content:
-                content = response.content  # If not nested, use the content directly
+            # Parse the response content
+            content = response.content
+            if isinstance(content, str):
+                import json
+                try:
+                    content = json.loads(content)
+                except json.JSONDecodeError as e:
+                    print(f"\n⚠️ Failed to parse response as JSON: {str(e)}")
+                    print("Raw response:", content)
+                    # Try to clean the response string
+                    cleaned_content = content.strip().replace('\n', '')
+                    print("Cleaned response:", cleaned_content)
+                    try:
+                        content = json.loads(cleaned_content)
+                        print("Successfully parsed cleaned response")
+                    except json.JSONDecodeError:
+                        print("⚠️ Failed to parse cleaned response")
+                        return action
+
+            # Get the actual content from nested structure if needed
+            if isinstance(content, dict):
+                content = content.get('content', content)
             
             # Parse action details
-            if "action" in content and content["action"] in ["Offer", "Refuse", "Kill"]:
-                action.action_type = content["action"]
-                action.damage_amount = content.get("damage")
-                # Convert target name to target_id if Kill action
-                if action.action_type == "Kill" and "target" in content:
-                    target_name = content["target"]
-                    # Game state should include a name to id mapping
-                    if "player_name_to_id" in game_state:
-                        action.target_player_id = target_name
-                    else:
-                        print("\n⚠️ Missing player_name_to_id mapping in game state")
-                action.speech = content.get("speech", "")
-                action.thinking = response.content.get("thinking", "")
+            if content and isinstance(content, dict):
+                if "action" in content and content["action"] in ["Offer", "Refuse", "Kill"]:
+                    action.action_type = content["action"]
+                    action.damage_amount = content.get("damage")
+                    # Convert target name to target_id if Kill action
+                    if action.action_type == "Kill" and "target" in content:
+                        target_name = content["target"]
+                        # Game state should include a name to id mapping
+                        if "player_name_to_id" in game_state:
+                            action.target_player_id = game_state["player_name_to_id"].get(target_name)
+                        else:
+                            print("\n⚠️ Missing player_name_to_id mapping in game state")
+                    action.speech = content.get("speech", "")
+                    action.thinking = response.content.get("thinking", "")
+                    
+                    # Update mindset based on thinking
+                    self.mindset = response.content.get("mindset", self.mindset)
+                else:
+                    print(f"\n⚠️ Invalid or missing action in content: {content}")
             else:
-                print(f"\n⚠️ Invalid or missing action in content: {response.content}")
+                print(f"\n⚠️ Invalid content structure: {content}")
             
             return action
             
         except Exception as e:
             print(f"\n❌ Error parsing negotiation response: {str(e)}")
-            print("Response:", response)
+            print("Response:", response.content)
             return PlayerAction(
                 action_type="Refuse",
                 thinking=f"Error parsing response: {str(e)}",
@@ -303,3 +340,45 @@ class Player:
         return "\n".join([
             f"- {name}: {opinion}" for name, opinion in self.opinions.items()
         ])
+
+    def update_mindset(self, round_number: int, context: Dict) -> Tuple[str, str]:
+        """
+        Update the player's mindset based on recent events.
+        
+        Args:
+            round_number: Current round number
+            context: Dictionary containing details about the recent event
+            
+        Returns:
+            Tuple[str, str]: (new mindset, request_id)
+        """
+        print("\n📤 Sending mindset update prompt...")
+        prompt = self._prompt_templates["mindset"].format(
+            name=self.name,
+            background_prompt=self.background_prompt,
+            hp=self.hp,
+            round_number=round_number,
+            current_mindset=self.mindset or "尚未形成明确的心理状态",
+            context=json.dumps(context, ensure_ascii=False)
+        )
+        
+        
+        response = self._llm_client.get_response(prompt)
+
+        try:
+            # Parse the response content
+            content = response.content
+            if isinstance(content, str):
+                content = json.loads(content)
+            
+            # Get the mindset from the parsed content
+            new_mindset = content.get("mindset", self.mindset)
+            
+            # Update the player's mindset
+            self.mindset = new_mindset
+            
+            return new_mindset, response.request_id
+            
+        except Exception as e:
+            print(f"\n⚠️ Error updating mindset: {str(e)}")
+            return self.mindset, response.request_id

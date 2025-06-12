@@ -3,8 +3,11 @@
 当前的游戏局面：
 - 你的 HP: {hp}
 - 游戏轮次: {round_number}
+- 本轮描述：{scenario}
 - 通关需要献祭的伤害: {damage_required}
 - 本轮进行了{negotiation_attempt} 次谈判
+- 你的当前心理状态: {current_mindset}
+
 
 仍存活玩家的状态:
 {player_states}
@@ -22,6 +25,6 @@
 
 2. "content": 一个JSON object
    - "action": 只能是["Offer", "Refuse", "Kill"]其中之一
-   - "damage": 数字，表示你愿意献祭的HP数量。只有action是Offer才填写。
+   - "damage": 数字，表示你参与游戏时愿意承担的的HP伤害点数。只有action是Offer才填写。
    - "target": 目标，表示你希望处决的目标。只有action是Kill才填写。记住你只能成功处决HP少于你的玩家。目标只能从还存活的玩家ID中选择。
    - "speech": 你对其他玩家的发言。

@@ -81,6 +81,7 @@ class LLMClient:
             
             # Get raw response text
             raw_response = response.choices[0].message.content
+            print(f"\nRaw LLM response: {raw_response}")
             
             # Clean up markdown code blocks if present
             cleaned_response = raw_response.strip()
@@ -89,10 +90,12 @@ class LLMClient:
             if cleaned_response.endswith("```"):
                 cleaned_response = cleaned_response[:-3]
             cleaned_response = cleaned_response.strip()
+            print(f"\nCleaned response: {cleaned_response}")
             
             try:
                 # Parse as JSON
                 content = json.loads(cleaned_response)
+                print(f"\nParsed JSON content: {content}")
                 
                 # Save successful response to database
                 save_prompt_history(
@@ -106,6 +109,21 @@ class LLMClient:
             except json.JSONDecodeError as e:
                 print(f"\n⚠️ Failed to parse response as JSON: {str(e)}")
                 print("Raw response:", raw_response)
+                print("Cleaned response:", cleaned_response)
+                
+                # Try to extract JSON from the response
+                try:
+                    # Look for JSON-like structure
+                    start_idx = cleaned_response.find("{")
+                    end_idx = cleaned_response.rfind("}")
+                    if start_idx >= 0 and end_idx > start_idx:
+                        json_str = cleaned_response[start_idx:end_idx + 1]
+                        print(f"\nExtracted JSON string: {json_str}")
+                        content = json.loads(json_str)
+                        print(f"\nParsed extracted JSON: {content}")
+                        return LLMResponse(content=content, request_id=request_id)
+                except Exception as inner_e:
+                    print(f"\n⚠️ Failed to extract JSON: {str(inner_e)}")
                 
                 # Save failed response to database
                 save_prompt_history(

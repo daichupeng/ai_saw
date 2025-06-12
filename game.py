@@ -7,6 +7,7 @@ from pathlib import Path
 import os
 import yaml
 from datetime import datetime
+from llm_client import LLMClient
 
 
 game_time = datetime.now().strftime("%H:%M:%S")
@@ -110,6 +111,8 @@ class Round:
     active_players: List[str] = field(default_factory=list)  # List of player IDs
     player_actions: Dict[str, PlayerAction] = field(default_factory=dict)  # player_id -> action
     damage_taken: Dict[str, int] = field(default_factory=dict)  # player_id -> damage
+    scenario: str = ""  # Description of the round's scenario
+    process: str = ""  # Description of how the scenario plays out
 
     def reset_player_sequence(self, players: List[str]) -> None:
         """Randomize the player sequence for this round."""
@@ -146,18 +149,79 @@ class Game:
         self.phase = GamePhase.NEGOTIATION
         self.active_players = list(self.players.keys())  # List of player IDs
         self.max_rounds = max_rounds
+        self._llm_client = LLMClient(model="gpt-3.5-turbo")
+        
+        # Load story prompt
+        prompts_dir = Path("prompts")
+        try:
+            with open(prompts_dir / "story.txt", 'r') as f:
+                self._story_prompt = f.read()
+        except FileNotFoundError:
+            raise RuntimeError("Could not find story prompt template")
+
+    def _generate_round_story(self) -> Tuple[str, str]:
+        """Generate the story for a round using the LLM."""
+        response = self._llm_client.get_response(self._story_prompt)
+        
+        try:
+            content = response.content
+            if isinstance(content, str):
+                import json
+                content = json.loads(content)
+            
+            scenario = content.get("scenario", "")
+            process = content.get("process", "")
+            
+            # Log the story
+            log("\n📖 ROUND STORY")
+            log("Scenario:", 1)
+            log(scenario, 2)
+            log("Process:", 1)
+            log(process, 2)
+            
+            return scenario, process
+        except Exception as e:
+            print(f"\n⚠️ Error generating round story: {str(e)}")
+            return "", ""
 
     def start_new_round(self) -> None:
         """Start a new round."""
         round_num = len(self.rounds) + 1
+        
+        # Generate the round's story
+        scenario, process = self._generate_round_story()
+        
         self.current_round = Round(
             number=round_num,
-            active_players=list(self.active_players)
+            active_players=list(self.active_players),
+            scenario=scenario,
+            process=process
         )
         self.current_round.reset_player_sequence(self.active_players)
         self.rounds.append(self.current_round)
         self.phase = GamePhase.NEGOTIATION
         print(f"\n🎲 Starting Round {round_num}")
+        
+        # Print the round's story
+        if scenario and process:
+            print("\n📖 Round Story:")
+            print("Scenario:", scenario)
+            print("Process:", process)
+            
+            # Update all alive players' mindsets based on the new scenario
+            log("\n🤔 Players'  Mindsets:")
+            for player_id in self.active_players:
+                player = self.players[player_id]
+                context = {
+                    "event": "new_round",
+                    "round": round_num,
+                    "scenario": scenario,
+                    "active_players": [self.player_id_to_name[pid] for pid in self.active_players],
+                    "total_players": len(self.active_players)
+                }
+                new_mindset, request_id = player.update_mindset(round_num, context)
+                player.mindset = new_mindset
+                log(f"{player.name}的心理状态：{new_mindset}", 1, request_id)
 
     def handle_negotiation_phase(self) -> bool:
         """
@@ -180,6 +244,7 @@ class Game:
                 "round_number": self.current_round.number,
                 "damage_required": self.current_round.damage_required,
                 "negotiation_attempt": self.current_round.negotiation_attempts,
+                "scenario": self.current_round.scenario,  # Add scenario to game state
                 "player_states": {
                     pid: {"hp": self.players[pid].hp}
                     for pid in self.active_players
@@ -202,7 +267,7 @@ class Game:
             self.current_round.player_actions[player_id] = action
             
             # Log negotiation action with request ID
-            log(f"Negotiation Action - Player: {player.name}")
+            log(f"Negotiation Action - Player: {player.name}, HP: {player.hp}")
             log(f"Thinking: {action.thinking}", 3, action.request_id)
             log(f"Speech: {action.speech}", 3, action.request_id)
             log(f"Action: {action.action_type}", 2, action.request_id)
@@ -231,7 +296,7 @@ class Game:
                 total_damage_required=self.current_round.damage_required,
                 total_damage_offered=self.current_round.total_damage_offered(),
                 negotiation_attempt=self.current_round.negotiation_attempts,
-                outcome="决定献祭自己" if action.action_type == "Offer" else "拒绝献祭自己"
+                outcome="决定做出痛苦的牺牲" if action.action_type == "Offer" else "拒绝做出牺牲"
             )
             self.update_all_opinions(player_id, context.event.value, context.to_dict())
 
@@ -241,7 +306,9 @@ class Game:
             return True
         
         # Handle failed negotiation
-        if self.current_round.negotiation_attempts % 3 == 1 and self.current_round.negotiation_attempts != 1:
+        if self.current_round.negotiation_attempts % 3 == 0:
+            log("\n⚡ NEGOTIATION FAILURE PENALTY", 1)
+            log("All players take 1 damage due to failed negotiations", 2)
             self.apply_negotiation_failure_damage()
             # self.current_round.negotiation_attempts = 0
             
@@ -443,6 +510,23 @@ class Game:
     def apply_negotiation_failure_damage(self) -> None:
         """Apply damage to all players after 3 failed negotiations."""
         print("\n⚡ Three failed negotiations - applying 1 damage to all players")
+        
+        # Update mindsets first with penalty context
+        log("\n🤔 Players' Mindsets After Penalty:")
+        for player_id in self.active_players:
+            player = self.players[player_id]
+            context = {
+                "event": "negotiation_penalty",
+                "round": self.current_round.number,
+                "active_players": [self.player_id_to_name[pid] for pid in self.active_players],
+                "total_players": len(self.active_players),
+                "outcome": "因为连续三次谈判失败，所有玩家受到1点伤害的惩罚"
+            }
+            new_mindset, request_id = player.update_mindset(self.current_round.number, context)
+            player.mindset = new_mindset
+            log(f"{player.name}的心理状态：{new_mindset}", 1, request_id)
+        
+        # Then apply the damage
         for player_id in self.active_players:
             self.apply_damage(player_id, 1)
 
@@ -456,15 +540,23 @@ class Game:
     def update_all_opinions(self, target_player_id: str, action_type: str, context: Dict) -> None:
         """Update all players' opinions about an action."""
         target_name = self.player_id_to_name[target_player_id]
+        
+        # First update the acting player's mindset
+        acting_player = self.players[target_player_id]
+
+    
+        # Then update other players' opinions and mindsets
         for observer_id in self.active_players:
             if observer_id != target_player_id:
+                # Update opinion
                 observer, subject, opinion, request_id = self.players[observer_id].update_opinion(
                     target_player_id=target_player_id,
                     target_player_name=target_name,
                     action_type=action_type,
                     context=context
                 )
-                log(f"{observer}对{subject}的印象更新了：{opinion}, Request ID: {request_id}, ")
+                log(f"{observer}对{subject}的印象更新了：{opinion}", 2, request_id)
+                
 
     def is_game_over(self) -> bool:
         """Check if the game is over."""
@@ -512,16 +604,12 @@ class Game:
                 log(f"\nNegotiation Results:", 1)
                 log(f"Total Damage Offered: {total_damage}/{self.current_round.damage_required}", 2)
                 
-                if not success and self.current_round.negotiation_attempts >= 3:
-                    log("\n⚡ NEGOTIATION FAILURE PENALTY", 1)
-                    log("All players take 1 damage due to failed negotiations", 2)
-                
                 if success:
                     log("\n✅ Negotiation Successful - Moving to Execution Phase", 1)
                     break
                 else:
                     log("\n❌ Negotiation Failed - Starting Next Attempt", 1)
-                    
+            
             # Check if round was completed by a kill action
             if self.current_round.status == RoundStatus.COMPLETED:
                 kill_action = self.current_round.get_kill_action()
@@ -613,31 +701,36 @@ def main():
         Player(
             player_id="chenzhihua",
             name="chenzhihua",
-            model="gpt-3.5-turbo",
+            model="o4-mini-2025-04-16",
+            mindset="突然从一个密室中醒来，不知自己身处何处，周围有十分恐怖的刀、钻头、电锯等工具，十分恐慌。",
             background_prompt="你是45岁的房地产开发商陈志华。你极度理性冷酷，将一切视为可计算的商业交易，善于操控他人情绪但从不暴露真实感受。你靠强拆养老院发家致富，为了项目利润导致多名老人无家可归后病死，连亲兄弟都被你算计破产。你在生活中习惯成为主导者，会冷静分析每个人的价值并优先牺牲'无用'的人。"
         ),
         Player(
             player_id="linxiaoyu",
             name="linxiaoyu",
-            model="gpt-3.5-turbo",
+            model="o4-mini-2025-04-16",
+            mindset="突然从一个密室中醒来，不知自己身处何处，周围有十分恐怖的刀、钻头、电锯等工具，十分恐慌。",
             background_prompt="你是32岁的失业小学教师林小雨。为了给患白血病的7岁儿子筹治疗费，你挪用了学校救灾款被发现后失业，丈夫因无法承受压力自杀，留下你独自面对巨额债务。曾经温柔的你变得歇斯底里，情绪极度不稳定。你有强烈的求生欲望，认为为了孩子可以做任何事，道德观念已经彻底扭曲。你容易情绪失控，会反复提及自己的孩子试图获得同情。"
         ),
         Player(
             player_id="wangdawei",
             name="wangdawei",
-            model="gpt-3.5-turbo",
+            model="o4-mini-2025-04-16",
+            mindset="突然从一个密室中醒来，不知自己身处何处，周围有十分恐怖的刀、钻头、电锯等工具，十分恐慌。",
             background_prompt="你是28岁的网约车司机王大伟。你沉迷网络赌博输光了所有积蓄和父母养老钱，为了还债偷取乘客遗失物品，甚至曾企图绑架富家女勒索但最终胆怯放弃。你极度胆小优柔寡断，总是寻求他人保护，善于察言观色投靠强者但关键时刻总会背叛。自卑感强烈却渴望被认可，容易被威胁而改变立场。"
         ),
         Player(
             player_id="sumengqi",
             name="sumengqi",
-            model="gpt-3.5-turbo",
+            model="o4-mini-2025-04-16",
+            mindset="突然从一个密室中醒来，不知自己身处何处，周围有十分恐怖的刀、钻头、电锯等工具，十分恐慌。",
             background_prompt="你是26岁的前护士苏梦琪。你曾是优秀的ICU护士，目睹太多因医疗腐败死去的病人后开始对收红包的医生进行'制裁'——在药物中添加有害物质，被发现后杀死了举报你的同事。你外表柔弱但内心极度坚韧狠毒，有强烈但扭曲的正义感，善于伪装无害实际城府极深。你对背叛和欺骗零容忍，报复心极强，会在对你认为'邪恶'的人毫不留情。"
         ),
         Player(
             player_id="zhangjianwen",
             name="zhangjianwen",
-            model="gpt-3.5-turbo",
+            model="o4-mini-2025-04-16",
+            mindset="突然从一个密室中醒来，不知自己身处何处，周围有十分恐怖的刀、钻头、电锯等工具，十分恐慌。",
             background_prompt="你是58岁的退休保安张建文。作为退伍军人，你在维和任务中失去战友患上PTSD，退休后做保安时因过度使用武力导致年轻窃贼重伤致残，但你认为自己在'维护正义'。你意志坚定但偏执狂躁，有强烈但扭曲的荣誉感和规则意识，容易被激怒且一旦愤怒就失去理智。你特别严厉，可能在情绪失控时做出冲动的致命决定。"
         )
     ]
