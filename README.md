@@ -8,7 +8,7 @@ v 0.3
 - Improved game state logging and debugging output
 
 v 0.2
-Added mindset mechanism to track the mindset changes of players
+Added mindset mechanism to track the mindset changes of players. Added story backgrounds of each round.
 
 v 0.1
 Prototype

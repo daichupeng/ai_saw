@@ -10,7 +10,7 @@ from datetime import datetime
 from llm_client import LLMClient
 
 
-game_time = datetime.now().strftime("%H:%M:%S")
+game_time = datetime.now().strftime("%y%m%d-%H%M%S")
 
 def log(message: str, indent: int = 0, request_id: Optional[str] = None,):
     # Create game log file
@@ -43,6 +43,7 @@ class EventType(Enum):
     OFFER = "offer"
     REFUSE = "refuse"
     KILL = "kill"
+    LYNCH = "lynch"
     EXECUTION = "execution"
     BACKSTAB_SUCCESS = "backstab_success"
     BACKSTAB_FAIL = "backstab_fail"
@@ -113,6 +114,7 @@ class Round:
     damage_taken: Dict[str, int] = field(default_factory=dict)  # player_id -> damage
     scenario: str = ""  # Description of the round's scenario
     process: str = ""  # Description of how the scenario plays out
+    lynch_actions: Dict[str, List[str]] = field(default_factory=dict)  # target_id -> list of lyncher_ids
 
     def reset_player_sequence(self, players: List[str]) -> None:
         """Randomize the player sequence for this round."""
@@ -136,6 +138,18 @@ class Round:
             if action.action_type == "Kill":
                 return player_id, action
         return None
+
+    def add_lynch_action(self, lyncher_id: str, target_id: str) -> None:
+        """Add a lynch action to the tracking."""
+        if target_id not in self.lynch_actions:
+            self.lynch_actions[target_id] = []
+        self.lynch_actions[target_id].append(lyncher_id)
+
+    def get_lynch_supporters_hp(self, target_id: str, players: Dict[str, Player]) -> int:
+        """Calculate total HP of players lynching a target."""
+        if target_id not in self.lynch_actions:
+            return 0
+        return sum(players[lyncher_id].hp for lyncher_id in self.lynch_actions[target_id])
 
 class Game:
     """Main game class that manages the game flow."""
@@ -173,7 +187,7 @@ class Game:
             process = content.get("process", "")
             
             # Log the story
-            log("\n📖 ROUND STORY")
+            log(f"\n📖 ROUND STORY")
             log("Scenario:", 1)
             log(scenario, 2)
             log("Process:", 1)
@@ -187,7 +201,8 @@ class Game:
     def start_new_round(self) -> None:
         """Start a new round."""
         round_num = len(self.rounds) + 1
-        
+        log(f"\n🎲 Starting Round {round_num}")
+
         # Generate the round's story
         scenario, process = self._generate_round_story()
         
@@ -200,7 +215,29 @@ class Game:
         self.current_round.reset_player_sequence(self.active_players)
         self.rounds.append(self.current_round)
         self.phase = GamePhase.NEGOTIATION
-        print(f"\n🎲 Starting Round {round_num}")
+        
+        # Check if there's only one player left with insufficient HP
+        if len(self.active_players) == 1:
+            last_player_id = self.active_players[0]
+            last_player = self.players[last_player_id]
+            if last_player.hp < self.current_round.damage_required:
+                log("\n⚠️ Last player has insufficient HP to pass the round")
+                # Update the player's mindset with the special context
+                context = {
+                    "event": "insufficient_hp",
+                    "round": round_num,
+                    "hp": last_player.hp,
+                    "damage_required": self.current_round.damage_required,
+                    "context": "因为你的血量不足，也没有其他剩余玩家一起合作通关，你在本关无奈地死亡。"
+                }
+                final_mindset, request_id = last_player.update_mindset(round_num, context)
+                log(f"\n🤔 Final Mindset of {last_player.name}:", 1)
+                log(final_mindset, 2, request_id)
+                # End the game with no winner
+                self.eliminate_player(last_player_id, "insufficient_hp")
+                self.current_round.status = RoundStatus.COMPLETED
+                print("\n🎮 Game Over! No winner!")
+                return
         
         # Print the round's story
         if scenario and process:
@@ -221,7 +258,7 @@ class Game:
                 }
                 new_mindset, request_id = player.update_mindset(round_num, context)
                 player.mindset = new_mindset
-                log(f"{player.name}的心理状态：{new_mindset}", 1, request_id)
+                log(f"{player.name},HP{player.hp} 的心理状态：{new_mindset}", 1, request_id)
 
     def handle_negotiation_phase(self) -> bool:
         """
@@ -244,14 +281,14 @@ class Game:
                 "round_number": self.current_round.number,
                 "damage_required": self.current_round.damage_required,
                 "negotiation_attempt": self.current_round.negotiation_attempts,
-                "scenario": self.current_round.scenario,  # Add scenario to game state
+                "scenario": self.current_round.scenario,
                 "player_states": {
                     pid: {"hp": self.players[pid].hp}
                     for pid in self.active_players
                 },
                 "previous_actions": [
                     {
-                        "player": self.player_id_to_name[pid],  # Use name for display
+                        "player": self.player_id_to_name[pid],
                         "action_type": action.action_type,
                         "damage_amount": action.damage_amount,
                         "target": self.player_id_to_name[action.target_player_id] if action.target_player_id else None,
@@ -259,7 +296,7 @@ class Game:
                     }
                     for pid, action in self.current_round.player_actions.items()
                 ],
-                "player_name_to_id": self.player_name_to_id  # Add mapping for player to convert names to IDs
+                "player_name_to_id": self.player_name_to_id
             }
             
             # Get player's action
@@ -277,7 +314,6 @@ class Game:
                 target_name = self.player_id_to_name[action.target_player_id]
                 log(f"Target: {target_name}", 3, action.request_id)
 
-            
             # Handle kill action
             if action.action_type == "Kill":
                 kill_success = self.handle_kill_action(player_id, action)
@@ -285,20 +321,90 @@ class Game:
                     return True  # End negotiation if kill was successful
                 # If kill failed, continue with next player
                 continue
-        
+
+            # Handle lynch action
+            if action.action_type == "Lynch":
+                if not action.target_player_id:
+                    log("❌ Lynch action failed: No target specified", 2)
+                    continue
+
+                # Add lynch action to tracking
+                self.current_round.add_lynch_action(player_id, action.target_player_id)
+                
+                # Check if lynch conditions are met
+                target_player = self.players[action.target_player_id]
+                total_lynchers_hp = self.current_round.get_lynch_supporters_hp(action.target_player_id, self.players)
+                lynchers = self.current_round.lynch_actions.get(action.target_player_id, [])
+                
+                if len(lynchers) >= 2 and total_lynchers_hp >= target_player.hp:
+                    # Lynch succeeds
+                    log(f"\n⚔️ LYNCH SUCCESS", 1)
+                    log(f"Target: {target_player.name}", 2)
+                    log(f"Number of Lynchers: {len(lynchers)}", 2)
+                    log(f"Total Lynchers HP: {total_lynchers_hp}", 2)
+                    log(f"Target HP: {target_player.hp}", 2)
+                    
+                    # Create context for successful lynch
+                    context = Context(
+                        event=EventType.LYNCH,
+                        round_number=self.current_round.number,
+                        acting_player=player.name,
+                        target_player=target_player.name,
+                        speech=action.speech,
+                        outcome="成功联合其他玩家共同制裁了目标"
+                    )
+                    
+                    # Update opinions about the lynch action
+                    self.update_all_opinions(player_id, context.event.value, context.to_dict())
+                    
+                    # Apply damage to lynchers
+                    for lyncher_id in lynchers:
+                        self.apply_damage(lyncher_id, 1)
+                        log(f"Lyncher {self.players[lyncher_id].name} takes 1 damage", 2)
+                    
+                    # Eliminate the target
+                    target_player.hp = 0
+                    self.eliminate_player(action.target_player_id, "lynched", lynchers=lynchers)
+                    
+                    # Complete round
+                    self.current_round.status = RoundStatus.COMPLETED
+                    return True
+                else:
+                    # Lynch attempt recorded but not yet successful
+                    log(f"\n📝 Lynch attempt recorded", 1)
+                    log(f"Target: {target_player.name}", 2)
+                    log(f"Current Number of Lynchers: {len(lynchers)}", 2)
+                    log(f"Current Lynchers HP: {total_lynchers_hp}", 2)
+                    log(f"Target HP: {target_player.hp}", 2)
+                    
+                    # Create context for unsuccessful lynch attempt
+                    failure_reason = "等待其他玩家加入制裁力量" if len(lynchers) < 2 else "制裁者的力量不足，需要更多玩家加入制裁"
+                    context = Context(
+                        event=EventType.LYNCH,
+                        round_number=self.current_round.number,
+                        acting_player=player.name,
+                        target_player=target_player.name,
+                        speech=action.speech,
+                        outcome=failure_reason
+                    )
+                    
+                    # Update opinions about the lynch attempt
+                    self.update_all_opinions(player_id, context.event.value, context.to_dict())
+            
             # Create context and update opinions based on action
-            context = Context(
-                event=EventType.OFFER if action.action_type == "Offer" else EventType.REFUSE,
-                round_number=self.current_round.number,
-                acting_player=player.name,
-                damage_amount=action.damage_amount,
-                speech=action.speech,
-                total_damage_required=self.current_round.damage_required,
-                total_damage_offered=self.current_round.total_damage_offered(),
-                negotiation_attempt=self.current_round.negotiation_attempts,
-                outcome="决定做出痛苦的牺牲" if action.action_type == "Offer" else "拒绝做出牺牲"
-            )
-            self.update_all_opinions(player_id, context.event.value, context.to_dict())
+            else:
+                context = Context(
+                    event=EventType.OFFER if action.action_type == "Offer" else EventType.REFUSE,
+                    round_number=self.current_round.number,
+                    acting_player=player.name,
+                    damage_amount=action.damage_amount,
+                    speech=action.speech,
+                    total_damage_required=self.current_round.damage_required,
+                    total_damage_offered=self.current_round.total_damage_offered(),
+                    negotiation_attempt=self.current_round.negotiation_attempts,
+                    outcome="决定做出痛苦的牺牲" if action.action_type == "Offer" else "拒绝做出牺牲"
+                )
+                self.update_all_opinions(player_id, context.event.value, context.to_dict())
 
         # Check if enough damage was offered
         if self.current_round.total_damage_offered() >= self.current_round.damage_required:
@@ -310,7 +416,6 @@ class Game:
             log("\n⚡ NEGOTIATION FAILURE PENALTY", 1)
             log("All players take 1 damage due to failed negotiations", 2)
             self.apply_negotiation_failure_damage()
-            # self.current_round.negotiation_attempts = 0
             
         return False
 
@@ -340,7 +445,7 @@ class Game:
             return False
         
         # Validate kill conditions
-        if killer.hp <= target.hp:
+        if killer.hp < target.hp:
             log(f"❌ Kill action failed: {killer.name} cannot kill {target.name} (invalid HP condition)")
             
             # Create context for failed kill attempt
@@ -357,7 +462,7 @@ class Game:
             return False
             
         # Apply damage
-        killer.hp -= 1
+        killer.hp -= 2
         target.hp = 0
         
         # Create context and update opinions for successful kill
@@ -370,7 +475,7 @@ class Game:
             outcome="成功杀死目标"
         )
         self.update_all_opinions(killer_id, context.event.value, context.to_dict())
-        self.eliminate_player(action.target_player_id)
+        self.eliminate_player(action.target_player_id, "killed", killer_id=killer_id)
         
         # Complete round
         self.current_round.status = RoundStatus.COMPLETED
@@ -484,6 +589,12 @@ class Game:
                 
                 for player_id in remaining_players:
                     self.apply_damage(player_id, damage_per_player)
+                    if player_id not in self.active_players:  # If player was eliminated by the damage
+                        backstabber_ids = [
+                            self.player_name_to_id[name] 
+                            for name in successful_backstabbers
+                        ]
+                        self.eliminate_player(player_id, "execution", backstabbers=backstabber_ids)
             else:
                 # If everyone backstabbed successfully, last player takes all damage
                 last_player_id = self.player_name_to_id[list(successful_backstabbers)[-1]]
@@ -493,6 +604,13 @@ class Game:
                     if self.player_id_to_name[player_id] in successful_backstabbers
                 )
                 self.apply_damage(last_player_id, total_damage)
+                if last_player_id not in self.active_players:  # If player was eliminated by the damage
+                    backstabber_ids = [
+                        self.player_name_to_id[name] 
+                        for name in successful_backstabbers
+                        if name != self.player_id_to_name[last_player_id]
+                    ]
+                    self.eliminate_player(last_player_id, "execution", backstabbers=backstabber_ids)
         
         # Complete round
         self.current_round.status = RoundStatus.COMPLETED
@@ -505,7 +623,11 @@ class Game:
         
         if player.hp <= 0:
             player.hp = 0
-            self.eliminate_player(player_id)
+            # Determine the reason for elimination based on the current phase
+            if self.phase == GamePhase.EXECUTION:
+                self.eliminate_player(player_id, "execution")
+            else:
+                self.eliminate_player(player_id, "negotiation_failure")
 
     def apply_negotiation_failure_damage(self) -> None:
         """Apply damage to all players after 3 failed negotiations."""
@@ -530,12 +652,73 @@ class Game:
         for player_id in self.active_players:
             self.apply_damage(player_id, 1)
 
-    def eliminate_player(self, player_id: str) -> None:
-        """Handle player elimination."""
+    def eliminate_player(self, player_id: str, reason: str = None, killer_id: str = None, lynchers: List[str] = None, backstabbers: List[str] = None) -> None:
+        """
+        Handle player elimination.
+        
+        Args:
+            player_id: The ID of the player to eliminate
+            reason: The reason for elimination, can be one of:
+                   - "killed" - died from a kill action
+                   - "lynched" - died from a lynch action
+                   - "execution" - died from taking too much damage during execution
+                   - "negotiation_failure" - died from failed negotiation penalty
+                   - "insufficient_hp" - died from having insufficient HP to pass the round
+            killer_id: The ID of the player who performed the kill action
+            lynchers: List of player IDs who participated in the lynch action
+            backstabbers: List of player IDs who successfully backstabbed
+        """
         if player_id in self.active_players:
             self.active_players.remove(player_id)
             player_name = self.player_id_to_name[player_id]
             print(f"\n💀 {player_name} has been eliminated!")
+            
+            # Update eliminated player's final mindset
+            eliminated_player = self.players[player_id]
+            
+            # Create context based on elimination reason
+            context = {
+                "event": "elimination",
+                "round": self.current_round.number,
+                "hp": eliminated_player.hp,
+                "reason": reason,
+                "context": self._get_elimination_context(reason, player_name, killer_id, lynchers, backstabbers)
+            }
+            
+            final_mindset, request_id = eliminated_player.update_mindset(self.current_round.number, context)
+            log(f"\n🤔 Final Mindset of {player_name}:", 1)
+            log(final_mindset, 2, request_id)
+            
+            # Update all other players' opinions about the eliminated player
+            for observer_id in list(self.players.keys()):  # Use list() to avoid modifying dict during iteration
+                if observer_id != player_id:
+                    existing_opinion = self.players[observer_id].opinions.get(player_id, "")
+                    self.players[observer_id].opinions[player_id] = "这名玩家已经死亡" + (f"，{existing_opinion}" if existing_opinion else "")
+
+    def _get_elimination_context(self, reason: str, player_name: str, killer_id: str = None, lynchers: List[str] = None, backstabbers: List[str] = None) -> str:
+        """Get the context message based on the elimination reason."""
+        if reason == "killed":
+            killer_name = self.player_id_to_name[killer_id] if killer_id else "未知玩家"
+            return f"你被{killer_name}直接杀死了。"
+        elif reason == "lynched":
+            if lynchers:
+                lyncher_names = [self.player_id_to_name[lid] for lid in lynchers]
+                lynchers_str = "、".join(lyncher_names)
+                return f"你被{lynchers_str}联合处决了。"
+            return "你被其他玩家联合处决了。"
+        elif reason == "execution":
+            if backstabbers:
+                backstabber_names = [self.player_id_to_name[bid] for bid in backstabbers]
+                backstabbers_str = "、".join(backstabber_names)
+                return f"你在执行阶段死亡，{backstabbers_str}选择了背刺。"
+            else:
+                return "你在执行阶段因承受不住伤害而死亡。"
+        elif reason == "negotiation_failure":
+            return "你因为多次谈判失败，触发了限时机关而死亡。"
+        elif reason == "insufficient_hp":
+            return "因为你的血量不足，也没有其他剩余玩家一起合作通关，你在本关无奈地死亡。"
+        else:
+            return "你死亡了。"
 
     def update_all_opinions(self, target_player_id: str, action_type: str, context: Dict) -> None:
         """Update all players' opinions about an action."""
@@ -560,18 +743,22 @@ class Game:
 
     def is_game_over(self) -> bool:
         """Check if the game is over."""
-        return len(self.active_players) <= 1 or len(self.rounds) > self.max_rounds
+        # Game is over if all players are dead or we've completed max_rounds
+        return len(self.active_players) == 0 or len(self.rounds) >= self.max_rounds
 
     def get_winner(self) -> Optional[str]:
         """Get the winner's name if there is one."""
-        if len(self.active_players) == 1:
-            return self.player_id_to_name[self.active_players[0]]
+        # Only declare a winner if they survived all rounds
+        if len(self.rounds) >= self.max_rounds and len(self.active_players) > 0:
+            # If multiple players survived all rounds, they all win
+            winners = [self.player_id_to_name[pid] for pid in self.active_players]
+            return ", ".join(winners)
         return None
 
     def play(self) -> str:
         """
         Play the game until completion.
-        Returns the name of the winner.
+        Returns the name of the winner(s) or "No winner".
         """
         # Initialize log file with game setup
         log("=== AI SAW GAME RECORD ===")
@@ -665,15 +852,19 @@ class Game:
         if winner:
             log(f"\n👑 GAME OVER - {winner} WINS!")
             log("\nWinner Details:", 1)
-            winner_id = self.player_name_to_id[winner]
-            winner_player = self.players[winner_id]
-            log(f"Final HP: {winner_player.hp}", 2)
-            log(f"Total Backstab Attempts: {winner_player.backstab_attempts}", 2)
-            log("\nFinal Opinions:", 2)
-            for target_id, opinion in winner_player.opinions.items():
-                if target_id != winner_id:
-                    target_name = self.player_id_to_name[target_id]
-                    log(f"- {target_name}: {opinion}", 3)
+            # If there are multiple winners, show details for each
+            winner_ids = [self.player_name_to_id[name.strip()] for name in winner.split(",")]
+            for winner_id in winner_ids:
+                winner_player = self.players[winner_id]
+                winner_name = self.player_id_to_name[winner_id]
+                log(f"\n{winner_name}:", 2)
+                log(f"Final HP: {winner_player.hp}", 3)
+                log(f"Total Backstab Attempts: {winner_player.backstab_attempts}", 3)
+                log("\nFinal Opinions:", 3)
+                for target_id, opinion in winner_player.opinions.items():
+                    if target_id != winner_id:
+                        target_name = self.player_id_to_name[target_id]
+                        log(f"- {target_name}: {opinion}", 4)
             print(f"\n👑 Game Over! {winner} wins!")
             return winner
         else:
@@ -702,41 +893,41 @@ def main():
             player_id="chenzhihua",
             name="chenzhihua",
             model="o4-mini-2025-04-16",
-            mindset="突然从一个密室中醒来，不知自己身处何处，周围有十分恐怖的刀、钻头、电锯等工具，十分恐慌。",
+            mindset="突然从一个密室中醒来，不知自己身处何处，周围有恐怖的刀、钻头、电锯等工具，极其恐慌。",
             background_prompt="你是45岁的房地产开发商陈志华。你极度理性冷酷，将一切视为可计算的商业交易，善于操控他人情绪但从不暴露真实感受。你靠强拆养老院发家致富，为了项目利润导致多名老人无家可归后病死，连亲兄弟都被你算计破产。你在生活中习惯成为主导者，会冷静分析每个人的价值并优先牺牲'无用'的人。"
         ),
         Player(
             player_id="linxiaoyu",
             name="linxiaoyu",
             model="o4-mini-2025-04-16",
-            mindset="突然从一个密室中醒来，不知自己身处何处，周围有十分恐怖的刀、钻头、电锯等工具，十分恐慌。",
+            mindset="突然从一个密室中醒来，不知自己身处何处，周围有恐怖的刀、钻头、电锯等工具，极其恐慌。",
             background_prompt="你是32岁的失业小学教师林小雨。为了给患白血病的7岁儿子筹治疗费，你挪用了学校救灾款被发现后失业，丈夫因无法承受压力自杀，留下你独自面对巨额债务。曾经温柔的你变得歇斯底里，情绪极度不稳定。你有强烈的求生欲望，认为为了孩子可以做任何事，道德观念已经彻底扭曲。你容易情绪失控，会反复提及自己的孩子试图获得同情。"
         ),
         Player(
             player_id="wangdawei",
             name="wangdawei",
             model="o4-mini-2025-04-16",
-            mindset="突然从一个密室中醒来，不知自己身处何处，周围有十分恐怖的刀、钻头、电锯等工具，十分恐慌。",
+            mindset="突然从一个密室中醒来，不知自己身处何处，周围有恐怖的刀、钻头、电锯等工具，极其恐慌。",
             background_prompt="你是28岁的网约车司机王大伟。你沉迷网络赌博输光了所有积蓄和父母养老钱，为了还债偷取乘客遗失物品，甚至曾企图绑架富家女勒索但最终胆怯放弃。你极度胆小优柔寡断，总是寻求他人保护，善于察言观色投靠强者但关键时刻总会背叛。自卑感强烈却渴望被认可，容易被威胁而改变立场。"
         ),
         Player(
             player_id="sumengqi",
             name="sumengqi",
             model="o4-mini-2025-04-16",
-            mindset="突然从一个密室中醒来，不知自己身处何处，周围有十分恐怖的刀、钻头、电锯等工具，十分恐慌。",
+            mindset="突然从一个密室中醒来，不知自己身处何处，周围有恐怖的刀、钻头、电锯等工具，极其恐慌。",
             background_prompt="你是26岁的前护士苏梦琪。你曾是优秀的ICU护士，目睹太多因医疗腐败死去的病人后开始对收红包的医生进行'制裁'——在药物中添加有害物质，被发现后杀死了举报你的同事。你外表柔弱但内心极度坚韧狠毒，有强烈但扭曲的正义感，善于伪装无害实际城府极深。你对背叛和欺骗零容忍，报复心极强，会在对你认为'邪恶'的人毫不留情。"
         ),
         Player(
-            player_id="zhangjianwen",
-            name="zhangjianwen",
+            player_id="yingzheng",
+            name="yingzheng",
             model="o4-mini-2025-04-16",
-            mindset="突然从一个密室中醒来，不知自己身处何处，周围有十分恐怖的刀、钻头、电锯等工具，十分恐慌。",
-            background_prompt="你是58岁的退休保安张建文。作为退伍军人，你在维和任务中失去战友患上PTSD，退休后做保安时因过度使用武力导致年轻窃贼重伤致残，但你认为自己在'维护正义'。你意志坚定但偏执狂躁，有强烈但扭曲的荣誉感和规则意识，容易被激怒且一旦愤怒就失去理智。你特别严厉，可能在情绪失控时做出冲动的致命决定。"
+            mindset="突然从一个密室中醒来，不知自己身处何处，周围有恐怖的刀、钻头、电锯等工具，极其恐慌。",
+            background_prompt="你是50岁的秦王嬴政穿越到此。你的出生只是一场政治阴谋的副产品，你就是踏着阴谋的隐忍与凶杀降临到这个世界，你的出生本来就是一场笑话，你很透了这个世界。你克制隐忍，可以在没有尊严的猪圈般的生活下存活。你嗜血疯狂，你逼迫生父自杀，只因外面的传言，虽然你并不在乎传言。你杀死了同父异母的两个弟弟，只因他抢夺了，那世上唯一的眷恋，那一点可怜的母爱。"
         )
     ]
     
     # Create and run the game
-    game = Game(players=players, description="A game of survival, negotiation, and betrayal.", max_rounds=6)
+    game = Game(players=players, description="A game of survival, negotiation, and betrayal.", max_rounds=5)
     winner = game.play()
     
     print(f"\n🏆 Game Over! Winner: {winner}")

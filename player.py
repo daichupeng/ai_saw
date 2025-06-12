@@ -1,11 +1,11 @@
 from dataclasses import dataclass, field
-from typing import Dict, Optional, Literal, Tuple
+from typing import Dict, Optional, Literal, Tuple, List
 from pathlib import Path
 import json
 from llm_client import LLMClient, LLMResponse
 
 # Type definitions
-ActionType = Literal["Offer", "Refuse", "Kill"]
+ActionType = Literal["Offer", "Refuse", "Kill", "Lynch"]
 PhaseType = Literal["negotiation", "execution"]
 
 @dataclass
@@ -262,11 +262,12 @@ class Player:
             
             # Parse action details
             if content and isinstance(content, dict):
-                if "action" in content and content["action"] in ["Offer", "Refuse", "Kill"]:
+                if "action" in content and content["action"] in ["Offer", "Refuse", "Kill", "Lynch"]:
                     action.action_type = content["action"]
                     action.damage_amount = content.get("damage")
-                    # Convert target name to target_id if Kill action
-                    if action.action_type == "Kill" and "target" in content:
+                    
+                    # Handle Kill or Lynch action target
+                    if action.action_type in ["Kill", "Lynch"] and "target" in content:
                         target_name = content["target"]
                         # Game state should include a name to id mapping
                         if "player_name_to_id" in game_state:
@@ -306,9 +307,10 @@ class Player:
         Format previous actions for prompt.
         Each action contains:
         - player: Name of the player
-        - action_type: "Offer", "Refuse", or "Kill"
+        - action_type: "Offer", "Refuse", "Kill", or "Lynch"
         - damage_amount: (Optional) Amount of damage offered
-        - target: (Optional) Target player for Kill action
+        - target: (Optional) Target player for Kill/Lynch action
+        - supporters: (Optional) List of supporting players for Lynch action
         - speech: What the player said during their action
         """
         formatted_actions = []
