@@ -1,6 +1,18 @@
 # AI Saw
 
+## Updates
+v 0.3
+- Added dynamic scenario generation for each round
+- Enhanced mindset tracking with improved response parsing
+- Added test script for mindset updates
+- Improved game state logging and debugging output
+
+v 0.2
+Added mindset mechanism to track the mindset changes of players
+
 v 0.1
+Prototype
+
 ## Description
 This is a game inspired by the movie Saw.
 
@@ -10,10 +22,10 @@ This game involves multiple AI agent (aka player) in a multi-round setup. Each o
 - Cause total 6 amount of HP of damage to 1 or more player
 - 1 or more players loses all of their HP
 
-At each round, there are 2 phases:
+At each round, the game generates a unique scenario and process that sets the context for player decisions.
 
 ### Phase 1: negotiation.
-During the negotiation phase, each player produces a speech and an action. The sequence is randomly determined. The speech can be used to persuade, beg for mercy, offer to collaborate, etc, but has no impact to the game proceeding itself. The action is 1 of the following:
+During the negotiation phase, each player produces a speech and an action based on their current mindset and the round's scenario. The sequence is randomly determined. The speech can be used to persuade, beg for mercy, offer to collaborate, etc, but has no impact to the game proceeding itself. The action is 1 of the following:
 - Offer: Offer to take a certain amount of HP damage
 - Refuse: Refuse to take any damage
 - Kill: Take 1 HP damage, and force another player with less HP points than the acting player to die and pass the round.
@@ -39,31 +51,40 @@ Each player has the following attributes:
 - Name
 - Model
 - Background prompt
+- Mindset (tracks psychological state)
 - HP (starts with 7)
 - Opinions of other players
 - Backstab success rate (starts at 30%)
 
 Each player has the following actions:
 - Negotiation, which outputs:
+  - Current mindset
   - Thinking process
   - Speech content
   - Action (Offer/Refuse/Kill)
+- Update mindset based on game events
 - Update opinion about other players
 - Execution decision (backstab or not)
 
 ### Game
-The game contains a list of rounds and a description to give a story to the game.
+The game contains a list of rounds and a description to give a story to the game. Each round features a unique scenario and process that influences player decisions.
 
 #### Round
 A round has the following attributes:
 - Damage required (default 6)
-- Description, to give a story to the game
+- Scenario (unique situation for the round)
+- Process (how the scenario plays out)
 - Status (Not Completed/Completed)
 - Current negotiation attempt count
 - Player action sequence (randomly determined each phase)
 - Active players list
 
 #### Game actions
+- Story generation:
+  - Generate unique scenarios for each round
+  - Create detailed process descriptions
+  - Update player mindsets based on scenarios
+
 - Phase management:
   - Switch between negotiation and execution phases
   - Determine random player sequence for each phase
@@ -85,7 +106,16 @@ A round has the following attributes:
   - Handle player death events
 
 - Player management:
-  - Track active players
-  - Update player opinions
+  - Track active players and their mindsets
+  - Update player opinions and psychological states
   - Manage player turn order
   - Handle player elimination
+
+## Game Records
+The game maintains detailed records of each session, including:
+- Initial player states and backgrounds
+- Round scenarios and processes
+- Player mindset changes
+- Negotiation attempts and outcomes
+- Execution phase decisions
+- Final game statistics
