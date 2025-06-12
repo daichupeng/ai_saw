@@ -1,6 +1,10 @@
 # AI Saw
 
 ## Updates
+v0.5 
+Added a self-intro mechanism, to allow players to do self introduction to form initial opinions.
+
+
 v 0.4
 - Added a Lynch mechanism, to allow multiple players to vote another player out to pass the round
 - Added a final mindset mechanism to produce the final mindset of a dying player.

@@ -56,7 +56,8 @@ class Player:
             "negotiation": "negotiation.txt",
             "backstab": "backstab.txt",
             "opinion_update": "opinion_update.txt",
-            "mindset": "mindset.txt"
+            "mindset": "mindset.txt",
+            "intro": "intro.txt"
         }
         
         for key, filename in template_files.items():
@@ -384,3 +385,37 @@ class Player:
         except Exception as e:
             print(f"\n⚠️ Error updating mindset: {str(e)}")
             return self.mindset, response.request_id
+
+    def introduce_self(self) -> Tuple[str, str]:
+        """
+        Generate a self introduction for the player.
+        
+        Returns:
+            Tuple[str, str]: (introduction text, request_id)
+        """
+        prompt = self._prompt_templates["intro"].format(
+            name=self.name,
+            background_prompt=self.background_prompt,
+            current_mindset=self.mindset,
+            opinions=self._format_opinions()
+        )
+        
+        response = self._llm_client.get_response(prompt)
+        
+        try:
+            # Parse the response content
+            content = response.content
+            if isinstance(content, str):
+                import json
+                content = json.loads(content)
+            
+            # Get the thinking and introduction from the parsed content
+            thinking = content.get("thinking", "")
+            content_obj = content.get("content", {})
+            introduction = content_obj.get("intro", "")
+            
+            return thinking, introduction, response.request_id
+            
+        except Exception as e:
+            print(f"\n⚠️ Error parsing introduction: {str(e)}")
+            return "", "我需要一点时间思考...", response.request_id
