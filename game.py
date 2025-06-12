@@ -336,7 +336,7 @@ class Game:
                 total_lynchers_hp = self.current_round.get_lynch_supporters_hp(action.target_player_id, self.players)
                 lynchers = self.current_round.lynch_actions.get(action.target_player_id, [])
                 
-                if len(lynchers) >= 2 and total_lynchers_hp >= target_player.hp:
+                if total_lynchers_hp >= 2*target_player.hp:
                     # Lynch succeeds
                     log(f"\n⚔️ LYNCH SUCCESS", 1)
                     log(f"Target: {target_player.name}", 2)
@@ -445,7 +445,7 @@ class Game:
             return False
         
         # Validate kill conditions
-        if killer.hp < target.hp:
+        if killer.hp <= target.hp:
             log(f"❌ Kill action failed: {killer.name} cannot kill {target.name} (invalid HP condition)")
             
             # Create context for failed kill attempt
@@ -890,11 +890,11 @@ def main():
     # Create players with different personalities
     players = [
         Player(
-            player_id="chenzhihua",
-            name="chenzhihua",
+            player_id="liubang",
+            name="liubang",
             model="o4-mini-2025-04-16",
             mindset="突然从一个密室中醒来，不知自己身处何处，周围有恐怖的刀、钻头、电锯等工具，极其恐慌。",
-            background_prompt="你是45岁的房地产开发商陈志华。你极度理性冷酷，将一切视为可计算的商业交易，善于操控他人情绪但从不暴露真实感受。你靠强拆养老院发家致富，为了项目利润导致多名老人无家可归后病死，连亲兄弟都被你算计破产。你在生活中习惯成为主导者，会冷静分析每个人的价值并优先牺牲'无用'的人。"
+            background_prompt="你是刘邦穿越回来。你安稳度日，随遇而安，在小镇过着随意洒脱快乐生活。不过当环境改变，你能迅速调整适应当下。你就是生活的变色龙。你迅速团结起来小伙伴，在乱世共同厮杀出一条求生血路。当秦朝的暴政降临，让你押运无辜的同胞去做苦役，只是路上有人逃脱，这一点小过错，按照暴政律令，就要让你犯法伏诛。你干脆一不做二不休，拉起大家一块拼命，亲自掀了这秦朝的王座，你要亲自看一看，王座上坐的是谁，如此的丑恶与凶残。你闷声自问，他能坐，我为何做不得。最终你实现了愿望，不过当小伙伴们各个也蠢蠢欲动，也要当王，你毫不犹豫的下了诛杀令。"
         ),
         Player(
             player_id="linxiaoyu",

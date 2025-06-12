@@ -1,6 +1,11 @@
 # AI Saw
 
 ## Updates
+v 0.4
+- Added a Lynch mechanism, to allow multiple players to vote another player out to pass the round
+- Added a final mindset mechanism to produce the final mindset of a dying player.
+
+
 v 0.3
 - Added dynamic scenario generation for each round
 - Enhanced mindset tracking with improved response parsing
@@ -28,7 +33,8 @@ At each round, the game generates a unique scenario and process that sets the co
 During the negotiation phase, each player produces a speech and an action based on their current mindset and the round's scenario. The sequence is randomly determined. The speech can be used to persuade, beg for mercy, offer to collaborate, etc, but has no impact to the game proceeding itself. The action is 1 of the following:
 - Offer: Offer to take a certain amount of HP damage
 - Refuse: Refuse to take any damage
-- Kill: Take 1 HP damage, and force another player with less HP points than the acting player to die and pass the round.
+- Kill: Take 2 HP damage, and force another player with less HP points than the acting player to die and pass the round.
+- Lynch: Invite 1 or more user to vote a player out by taking 1 HP damage each
 
 If one of the players decide to kill, the negotiation phase ends and all the remaining players advance to the next round.
 
