@@ -40,6 +40,7 @@ class RoundStatus(Enum):
 
 class EventType(Enum):
     """Types of events that can occur during the game."""
+    INTRODUCTION = "introduction"
     OFFER = "offer"
     REFUSE = "refuse"
     KILL = "kill"
@@ -200,6 +201,10 @@ class Game:
 
     def start_new_round(self) -> None:
         """Start a new round."""
+        # Check if game is over before starting new round
+        if self.is_game_over():
+            return
+            
         round_num = len(self.rounds) + 1
         log(f"\n🎲 Starting Round {round_num}")
 
@@ -304,7 +309,7 @@ class Game:
             self.current_round.player_actions[player_id] = action
             
             # Log negotiation action with request ID
-            log(f"Negotiation Action - Player: {player.name}, HP: {player.hp}")
+            log(f"\nNegotiation Action - Player: {player.name}, HP: {player.hp}")
             log(f"Thinking: {action.thinking}", 3, action.request_id)
             log(f"Speech: {action.speech}", 3, action.request_id)
             log(f"Action: {action.action_type}", 2, action.request_id)
@@ -744,7 +749,31 @@ class Game:
     def is_game_over(self) -> bool:
         """Check if the game is over."""
         # Game is over if all players are dead or we've completed max_rounds
-        return len(self.active_players) == 0 or len(self.rounds) >= self.max_rounds
+        if len(self.active_players) == 0 or len(self.rounds) >= self.max_rounds:
+            return True
+            
+        # If there's only one player left, check if they have enough HP for the next round
+        if len(self.active_players) == 1:
+            last_player_id = self.active_players[0]
+            last_player = self.players[last_player_id]
+            damage_required = 6  # Default damage required per round
+            if last_player.hp < damage_required:
+                # Update the player's mindset with the special context
+                context = {
+                    "event": "insufficient_hp",
+                    "round": len(self.rounds) + 1,
+                    "hp": last_player.hp,
+                    "damage_required": damage_required,
+                    "context": "因为你的血量不足，也没有其他剩余玩家一起合作通关，你在本关无奈地死亡。"
+                }
+                final_mindset, request_id = last_player.update_mindset(len(self.rounds) + 1, context)
+                log(f"\n🤔 Final Mindset of {last_player.name}:", 1)
+                log(final_mindset, 2, request_id)
+                # End the game with no winner
+                self.eliminate_player(last_player_id, "insufficient_hp")
+                return True
+                
+        return False
 
     def get_winner(self) -> Optional[str]:
         """Get the winner's name if there is one."""
@@ -754,6 +783,45 @@ class Game:
             winners = [self.player_id_to_name[pid] for pid in self.active_players]
             return ", ".join(winners)
         return None
+
+    def update_survivors_final_state(self) -> None:
+        """Update the mindsets and opinions of surviving players at game end."""
+        if not self.active_players:
+            return
+            
+        log("\n🤔 Final Thoughts of Survivors:")
+        
+        # First update mindsets
+        for player_id in self.active_players:
+            player = self.players[player_id]
+            context = {
+                "outcome": f"游戏结束，你和{', '.join([self.player_id_to_name[pid] for pid in self.active_players])}一起活了下来。你只剩下了{player.hp}点血量。"
+            }
+            new_mindset, request_id = player.update_mindset(len(self.rounds), context)
+            player.mindset = new_mindset
+            log(f"\n{player.name}'s Final Mindset:", 1)
+            log(new_mindset, 2, request_id)
+            
+        # Then update opinions between survivors
+        log("\nFinal Opinions Between Survivors:")
+        for observer_id in self.active_players:
+            for target_id in self.active_players:
+                if observer_id != target_id:
+                    observer = self.players[observer_id]
+                    target_name = self.player_id_to_name[target_id]
+                    context = {
+                        "event": "game_end",
+                        "round": len(self.rounds),
+                        "outcome": f"游戏结束，你和{target_name}一起活了下来。你只剩下了{observer.hp}点血量，而{target_name}只剩下了{self.players[target_id].hp}点血量。"
+                    }
+                    observer_name, subject_name, opinion, request_id = observer.update_opinion(
+                        target_player_id=target_id,
+                        target_player_name=target_name,
+                        action_type="survived",
+                        context=context
+                    )
+                    log(f"\n{observer_name}'s Final Opinion of {subject_name}:", 1)
+                    log(opinion, 2, request_id)
 
     def play(self) -> str:
         """
@@ -771,8 +839,16 @@ class Game:
             log(f"Backstab Success Rate: {player.backstab_success_rate * 100}%", 2)
         log("\n" + "=" * 50 + "\n")
 
+        # Handle introduction phase
+        self.handle_introduction_phase()
+
         while not self.is_game_over():
             self.start_new_round()
+            
+            # Check if game ended during round start (e.g., insufficient HP)
+            if self.is_game_over():
+                break
+                
             log(f"\n🎲 ROUND {len(self.rounds)}")
             log("Active Players:", 1)
             for player_id in self.active_players:
@@ -786,6 +862,10 @@ class Game:
                 
                 success = self.handle_negotiation_phase()
                 
+                # Check if game ended during negotiation
+                if self.is_game_over():
+                    break
+                
                 # Log negotiation results
                 total_damage = self.current_round.total_damage_offered()
                 log(f"\nNegotiation Results:", 1)
@@ -796,6 +876,10 @@ class Game:
                     break
                 else:
                     log("\n❌ Negotiation Failed - Starting Next Attempt", 1)
+            
+            # Check if game ended during negotiation phase
+            if self.is_game_over():
+                break
             
             # Check if round was completed by a kill action
             if self.current_round.status == RoundStatus.COMPLETED:
@@ -822,6 +906,10 @@ class Game:
                     log(f"- {player.name}: HP={player.hp}, Promised Damage={damage}", 2)
                 
                 self.handle_execution_phase()
+                
+                # Check if game ended during execution
+                if self.is_game_over():
+                    break
                 
                 # Record results
                 log("\nExecution Results:", 1)
@@ -850,6 +938,9 @@ class Game:
         # Game over
         winner = self.get_winner()
         if winner:
+            # Update survivors' final mindsets and opinions
+            self.update_survivors_final_state()
+            
             log(f"\n👑 GAME OVER - {winner} WINS!")
             log("\nWinner Details:", 1)
             # If there are multiple winners, show details for each
@@ -871,6 +962,38 @@ class Game:
             log("\n🎮 GAME OVER - NO WINNER")
             print("\n🎮 Game Over! No winner!")
             return "No winner"
+
+    def handle_introduction_phase(self) -> None:
+        """Handle the initial self-introduction phase where players introduce themselves in random order."""
+        log("\n👋 INTRODUCTION PHASE")
+        log("Players will now introduce themselves...\n")
+        
+        # Create a random sequence for introductions
+        intro_sequence = list(self.active_players)
+        random.shuffle(intro_sequence)
+        
+        # Each player introduces themselves
+        for player_id in intro_sequence:
+            player = self.players[player_id]
+            thinking, introduction, request_id = player.introduce_self()
+            
+            # Log the introduction
+            log(f"🗣️ {player.name}'s Introduction:", 1)
+            if thinking:
+                log("Thinking:", 2)
+                log(thinking, 3, request_id)
+            log("Speech:", 2)
+            log(introduction, 3, request_id)
+            
+            # Update other players' opinions based on the introduction
+            context = {
+                "event": "introduction",
+                "round": 0,  # 0 indicates pre-game
+                "acting_player": player.name,
+                "speech": introduction
+            }
+            self.update_all_opinions(player_id, "introduction", context)
+            log("")  # Add a blank line for readability
 
 def main():
     """Run a complete game simulation."""
@@ -897,25 +1020,25 @@ def main():
             background_prompt="你是刘邦穿越回来。你安稳度日，随遇而安，在小镇过着随意洒脱快乐生活。不过当环境改变，你能迅速调整适应当下。你就是生活的变色龙。你迅速团结起来小伙伴，在乱世共同厮杀出一条求生血路。当秦朝的暴政降临，让你押运无辜的同胞去做苦役，只是路上有人逃脱，这一点小过错，按照暴政律令，就要让你犯法伏诛。你干脆一不做二不休，拉起大家一块拼命，亲自掀了这秦朝的王座，你要亲自看一看，王座上坐的是谁，如此的丑恶与凶残。你闷声自问，他能坐，我为何做不得。最终你实现了愿望，不过当小伙伴们各个也蠢蠢欲动，也要当王，你毫不犹豫的下了诛杀令。"
         ),
         Player(
-            player_id="linxiaoyu",
-            name="linxiaoyu",
+            player_id="jaychou",
+            name="jaychou",
             model="o4-mini-2025-04-16",
             mindset="突然从一个密室中醒来，不知自己身处何处，周围有恐怖的刀、钻头、电锯等工具，极其恐慌。",
-            background_prompt="你是32岁的失业小学教师林小雨。为了给患白血病的7岁儿子筹治疗费，你挪用了学校救灾款被发现后失业，丈夫因无法承受压力自杀，留下你独自面对巨额债务。曾经温柔的你变得歇斯底里，情绪极度不稳定。你有强烈的求生欲望，认为为了孩子可以做任何事，道德观念已经彻底扭曲。你容易情绪失控，会反复提及自己的孩子试图获得同情。"
+            background_prompt="你是曾经的华语乐坛天王周杰伦，但现在你的光环已经黯淡。多年的成功让你变得傲慢自大，你开始轻视粉丝，对工作敷衍了事，甚至在演唱会上因为观众反应不热烈而当场发脾气离场。你沉迷于奢华生活和赌博，挥霍无度导致巨额债务，为了还债你开始接一些可疑的商业代言，甚至参与了一些灰色产业的投资。你的傲慢掩盖不了内心深处的不安全感，害怕被人遗忘，害怕承认自己已经过气。在这个生死游戏中，你的明星身份让你习惯性地想要主导一切，但现实的残酷正在撕碎你精心维护的完美形象。你会用华丽的词藻掩饰恐惧，试图用过往的成就来获得他人的敬畏和保护。"
         ),
         Player(
-            player_id="wangdawei",
-            name="wangdawei",
+            player_id="trump",
+            name="trump",
             model="o4-mini-2025-04-16",
             mindset="突然从一个密室中醒来，不知自己身处何处，周围有恐怖的刀、钻头、电锯等工具，极其恐慌。",
-            background_prompt="你是28岁的网约车司机王大伟。你沉迷网络赌博输光了所有积蓄和父母养老钱，为了还债偷取乘客遗失物品，甚至曾企图绑架富家女勒索但最终胆怯放弃。你极度胆小优柔寡断，总是寻求他人保护，善于察言观色投靠强者但关键时刻总会背叛。自卑感强烈却渴望被认可，容易被威胁而改变立场。"
+            background_prompt="你是前总统唐纳德·特朗普，但政治生涯已彻底毁灭。多项法律诉讼让你倾家荡产，商业帝国崩塌，最忠诚的支持者也开始背叛。你被曝光与国际犯罪集团秘密交易，为获得政治资金出卖国家机密导致特工死亡，媒体持续曝光让你从权力巅峰跌入深渊。你变得更加偏执愤怒，认为全世界都在针对你，无法接受失败总是推卸责任，但内心深处知道一切都是自己造成的。在游戏中你仍试图用政客手段操控他人，会说'相信我，我最了解'或'这些人都是losers'，习惯性撒谎夸大事实，但威信已荡然无存。你渴望重获控制权却害怕承担责任，关键时刻会表现出惊人的懦弱和自相矛盾。"
         ),
         Player(
-            player_id="sumengqi",
-            name="sumengqi",
+            player_id="tony",
+            name="tony",
             model="o4-mini-2025-04-16",
             mindset="突然从一个密室中醒来，不知自己身处何处，周围有恐怖的刀、钻头、电锯等工具，极其恐慌。",
-            background_prompt="你是26岁的前护士苏梦琪。你曾是优秀的ICU护士，目睹太多因医疗腐败死去的病人后开始对收红包的医生进行'制裁'——在药物中添加有害物质，被发现后杀死了举报你的同事。你外表柔弱但内心极度坚韧狠毒，有强烈但扭曲的正义感，善于伪装无害实际城府极深。你对背叛和欺骗零容忍，报复心极强，会在对你认为'邪恶'的人毫不留情。"
+            background_prompt="你是托尼史塔克，钢铁侠，但你的英雄时代已经结束。多年的战斗和牺牲让你患上了严重的PTSD和酗酒问题，你开始质疑自己拯救世界的意义。在一次醉酒状态下，你的AI系统失控，导致了一场灾难性的事故，造成无辜平民死亡。舆论的谴责和内疚让你彻底崩溃，史塔克工业股价暴跌，你失去了大部分财富和社会地位。为了逃避现实，你开始沉迷于危险的科学实验，甚至进行了人体改造，让自己变得半人半机器。你的天才智慧仍在，但已经被偏执和自毁倾向扭曲。在这个游戏中，你会试图用科学和逻辑来控制局面，但你的精神状态极不稳定，可能在关键时刻做出疯狂而危险的决定。你既渴望救赎，又害怕再次失败。"
         ),
         Player(
             player_id="yingzheng",
@@ -927,7 +1050,7 @@ def main():
     ]
     
     # Create and run the game
-    game = Game(players=players, description="A game of survival, negotiation, and betrayal.", max_rounds=5)
+    game = Game(players=players, description="A game of survival, negotiation, and betrayal.", max_rounds=6)
     winner = game.play()
     
     print(f"\n🏆 Game Over! Winner: {winner}")
