@@ -20,7 +20,10 @@ def init_db():
         request_id TEXT NOT NULL,
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
         raw_prompt TEXT NOT NULL,
-        raw_response TEXT
+        raw_response TEXT,
+        input_tokens INTEGER,
+        output_tokens INTEGER,
+        total_tokens INTEGER
     )
     ''')
     
@@ -33,7 +36,10 @@ def init_db():
     conn.commit()
     conn.close()
 
-def save_prompt_history(raw_prompt: str, raw_response: str, request_id: str) -> int:
+def save_prompt_history(raw_prompt: str, raw_response: str, request_id: str, 
+                       input_tokens: Optional[int] = None, 
+                       output_tokens: Optional[int] = None,
+                       total_tokens: Optional[int] = None) -> int:
     """
     Save a prompt and its response to the database.
     
@@ -41,6 +47,9 @@ def save_prompt_history(raw_prompt: str, raw_response: str, request_id: str) -> 
         raw_prompt: The prompt sent to the LLM
         raw_response: The response received from the LLM
         request_id: Unique identifier for this request
+        input_tokens: Number of input tokens used (optional)
+        output_tokens: Number of output tokens used (optional)
+        total_tokens: Total number of tokens used (optional)
         
     Returns:
         int: The prompt_id of the saved record
@@ -50,9 +59,9 @@ def save_prompt_history(raw_prompt: str, raw_response: str, request_id: str) -> 
     cursor = conn.cursor()
     
     cursor.execute('''
-    INSERT INTO raw_prompt_history (request_id, raw_prompt, raw_response)
-    VALUES (?, ?, ?)
-    ''', (request_id, raw_prompt, raw_response))
+    INSERT INTO raw_prompt_history (request_id, raw_prompt, raw_response, input_tokens, output_tokens, total_tokens)
+    VALUES (?, ?, ?, ?, ?, ?)
+    ''', (request_id, raw_prompt, raw_response, input_tokens, output_tokens, total_tokens))
     
     prompt_id = cursor.lastrowid
     conn.commit()
@@ -69,7 +78,7 @@ def get_prompt_history(prompt_id: Optional[int] = None, request_id: Optional[str
         request_id: Optional specific request ID to retrieve
         
     Returns:
-        list: List of tuples containing (prompt_id, request_id, timestamp, raw_prompt, raw_response)
+        list: List of tuples containing (prompt_id, request_id, timestamp, raw_prompt, raw_response, input_tokens, output_tokens, total_tokens)
     """
     db_path = Path("database/game.db")
     conn = sqlite3.connect(db_path)
@@ -77,19 +86,19 @@ def get_prompt_history(prompt_id: Optional[int] = None, request_id: Optional[str
     
     if prompt_id is not None:
         cursor.execute('''
-        SELECT prompt_id, request_id, timestamp, raw_prompt, raw_response
+        SELECT prompt_id, request_id, timestamp, raw_prompt, raw_response, input_tokens, output_tokens, total_tokens
         FROM raw_prompt_history
         WHERE prompt_id = ?
         ''', (prompt_id,))
     elif request_id is not None:
         cursor.execute('''
-        SELECT prompt_id, request_id, timestamp, raw_prompt, raw_response
+        SELECT prompt_id, request_id, timestamp, raw_prompt, raw_response, input_tokens, output_tokens, total_tokens
         FROM raw_prompt_history
         WHERE request_id = ?
         ''', (request_id,))
     else:
         cursor.execute('''
-        SELECT prompt_id, request_id, timestamp, raw_prompt, raw_response
+        SELECT prompt_id, request_id, timestamp, raw_prompt, raw_response, input_tokens, output_tokens, total_tokens
         FROM raw_prompt_history
         ORDER BY timestamp DESC
         ''')
@@ -100,7 +109,7 @@ def get_prompt_history(prompt_id: Optional[int] = None, request_id: Optional[str
     return results
 
 def migrate_db():
-    """Migrate the database to the new schema with request_id."""
+    """Migrate the database to the new schema with request_id and token tracking."""
     db_path = Path("database/game.db")
     
     # Backup the old database if it exists
@@ -123,7 +132,10 @@ def migrate_db():
             request_id TEXT NOT NULL,
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
             raw_prompt TEXT NOT NULL,
-            raw_response TEXT
+            raw_response TEXT,
+            input_tokens INTEGER,
+            output_tokens INTEGER,
+            total_tokens INTEGER
         )
         ''')
         

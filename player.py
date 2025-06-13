@@ -29,7 +29,7 @@ class Player:
     background_prompt: str
     
     # Optional initialization attributes with defaults
-    hp: int = 7
+    hp: int = 10
     backstab_success_rate: float = 0.30
     opinions: Dict[str, str] = field(default_factory=dict)  # player_id -> opinion (descriptive string)
     backstab_attempts: int = 0

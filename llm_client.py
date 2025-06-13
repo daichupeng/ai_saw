@@ -17,7 +17,7 @@ ModelType = Literal[
     # Claude models
     "claude-s3", "claude-s4", "claude-o4",
     # Deepseek models
-    "deepseek-r1",
+    "deepseek-reasoner",
     # Grok models
     "grok-3"
 ]
@@ -40,13 +40,15 @@ class LLMResponse:
     content: Dict[str, Any]  # The parsed JSON response content
     request_id: str  # Unique identifier for this request
     model: Optional[str] = None
-    tokens_used: Optional[int] = None
+    input_tokens: Optional[int] = None
+    output_tokens: Optional[int] = None
+    total_tokens: Optional[int] = None
     provider: Optional[str] = None
 
 class LLMClient:
     """Client for interacting with various Language Learning Models."""
     
-    def __init__(self, model: str = "gpt-3.5-turbo", api_key: Optional[str] = None):
+    def __init__(self, model: str = "deepseek-reasoner", api_key: Optional[str] = None):
         """Initialize the LLM client."""
         self.model = model
         self._api_key = api_key or os.getenv("OPENAI_API_KEY")
@@ -62,7 +64,9 @@ class LLMClient:
             raise RuntimeError("Could not find system prompt template")
         
         # Initialize OpenAI client
-        self._client = OpenAI(api_key=self._api_key)
+        self._client = OpenAI(api_key=self._api_key
+                            #   , base_url="https://api.deepseek.com"
+                              )
     
     def get_response(self, prompt: str) -> LLMResponse:
         """Get a response from the LLM."""
@@ -79,9 +83,15 @@ class LLMClient:
                 ]
             )
             
-            # Get raw response text
+            # Get raw response text and token usage
             raw_response = response.choices[0].message.content
+            input_tokens = response.usage.prompt_tokens
+            output_tokens = response.usage.completion_tokens
+            total_tokens = response.usage.total_tokens
             print(f"\nRaw LLM response: {raw_response}")
+            print(f"Input tokens: {input_tokens}")
+            print(f"Output tokens: {output_tokens}")
+            print(f"Total tokens: {total_tokens}")
             
             # Clean up markdown code blocks if present
             cleaned_response = raw_response.strip()
@@ -97,14 +107,25 @@ class LLMClient:
                 content = json.loads(cleaned_response)
                 print(f"\nParsed JSON content: {content}")
                 
-                # Save successful response to database
+                # Save successful response to database with token usage
                 save_prompt_history(
                     raw_prompt=prompt,
                     raw_response=raw_response,
-                    request_id=request_id
+                    request_id=request_id,
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    total_tokens=total_tokens
                 )
                 
-                return LLMResponse(content=content, request_id=request_id)
+                return LLMResponse(
+                    content=content,
+                    request_id=request_id,
+                    model=self.model,
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    total_tokens=total_tokens,
+                    provider="openai"
+                )
                 
             except json.JSONDecodeError as e:
                 print(f"\n⚠️ Failed to parse response as JSON: {str(e)}")
@@ -121,26 +142,48 @@ class LLMClient:
                         print(f"\nExtracted JSON string: {json_str}")
                         content = json.loads(json_str)
                         print(f"\nParsed extracted JSON: {content}")
-                        return LLMResponse(content=content, request_id=request_id)
+                        return LLMResponse(
+                            content=content,
+                            request_id=request_id,
+                            model=self.model,
+                            input_tokens=input_tokens,
+                            output_tokens=output_tokens,
+                            total_tokens=total_tokens,
+                            provider="openai"
+                        )
                 except Exception as inner_e:
                     print(f"\n⚠️ Failed to extract JSON: {str(inner_e)}")
                 
-                # Save failed response to database
+                # Save failed response to database with token usage
                 save_prompt_history(
                     raw_prompt=prompt,
                     raw_response=raw_response,
-                    request_id=request_id
+                    request_id=request_id,
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    total_tokens=total_tokens
                 )
                 
                 # Return empty content on parse failure
-                return LLMResponse(content={}, request_id=request_id)
+                return LLMResponse(
+                    content={},
+                    request_id=request_id,
+                    model=self.model,
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    total_tokens=total_tokens,
+                    provider="openai"
+                )
             
         except Exception as e:
             # Save failed prompt to database with error message
             save_prompt_history(
                 raw_prompt=prompt,
                 raw_response=f"ERROR: {str(e)}",
-                request_id=request_id
+                request_id=request_id,
+                input_tokens=None,
+                output_tokens=None,
+                total_tokens=None
             )
             raise LLMError(f"Error getting response from LLM: {str(e)}")
 

@@ -1,0 +1,30 @@
+# Game Settings
+
+# Round Settings
+max_rounds: 6
+damage_required_per_round: 7
+
+# Player Settings
+base_hp: 9  # Starting HP for each player
+hp_needed_to_kill: 3  # Amount of HP needed to kill another player
+
+# Player List
+players:
+  - name: "Cao Cao"
+    role: "Strategist"
+    hp: 10
+  - name: "Monica"
+    role: "Survivor"
+    hp: 10
+  - name: "Trump"
+    role: "Leader"
+    hp: 10
+  - name: "Hua Fei"
+    role: "Queen"
+    hp: 10
+  - name: "Jay Chou"
+    role: "Artist"
+    hp: 10
+  - name: "Ethan Hunt"
+    role: "Agent"
+    hp: 10

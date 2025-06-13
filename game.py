@@ -8,9 +8,34 @@ import os
 import yaml
 from datetime import datetime
 from llm_client import LLMClient
+from concurrent.futures import ThreadPoolExecutor
 
 
 game_time = datetime.now().strftime("%y%m%d-%H%M%S")
+
+def load_game_settings():
+    """Load game settings from game_settings.yaml."""
+    try:
+        with open('game_settings.yaml', 'r') as f:
+            settings = yaml.safe_load(f)
+            return {
+                'max_rounds': settings['max_rounds'],
+                'damage_required_per_round': settings['damage_required_per_round'],
+                'base_hp': settings['base_hp'],
+                'hp_needed_to_kill': settings['hp_needed_to_kill']
+            }
+    except Exception as e:
+        print(f"Error loading game settings: {e}")
+        # Default values if settings file cannot be loaded
+        return {
+            'max_rounds': 3,
+            'damage_required_per_round': 6,
+            'base_hp': 10,
+            'hp_needed_to_kill': 3
+        }
+
+# Load game settings at module level
+GAME_SETTINGS = load_game_settings()
 
 def log(message: str, indent: int = 0, request_id: Optional[str] = None,):
     # Create game log file
@@ -19,11 +44,11 @@ def log(message: str, indent: int = 0, request_id: Optional[str] = None,):
     
     # Create log file in game_record directory
     log_file = record_dir / f"game_record_{game_time}.txt"
-    timestamp = datetime.now().strftime("%H:%M:%S")
+    timestamp = int(datetime.now().timestamp())
 
     """Helper function to write to log file with timestamp."""
     with open(log_file, 'a') as f:
-        log_line = f"[{timestamp}] {'  ' * indent}{message}"
+        log_line = f"[Time: {timestamp}] {'  ' * indent}{message}"
         if request_id:
             log_line += f" (Request ID: {request_id})"
         f.write(log_line + "\n")
@@ -105,7 +130,7 @@ class Context:
 class Round:
     """Represents a round in the game."""
     number: int
-    damage_required: int = 6
+    damage_required: int = field(default_factory=lambda: GAME_SETTINGS['damage_required_per_round'])
     description: str = ""
     status: RoundStatus = RoundStatus.NOT_COMPLETED
     negotiation_attempts: int = 0
@@ -114,7 +139,6 @@ class Round:
     player_actions: Dict[str, PlayerAction] = field(default_factory=dict)  # player_id -> action
     damage_taken: Dict[str, int] = field(default_factory=dict)  # player_id -> damage
     scenario: str = ""  # Description of the round's scenario
-    process: str = ""  # Description of how the scenario plays out
     lynch_actions: Dict[str, List[str]] = field(default_factory=dict)  # target_id -> list of lyncher_ids
 
     def reset_player_sequence(self, players: List[str]) -> None:
@@ -154,8 +178,11 @@ class Round:
 
 class Game:
     """Main game class that manages the game flow."""
-    def __init__(self, players: List[Player], description: str = "", max_rounds: int = 10):
+    def __init__(self, players: List[Player], description: str = ""):
         self.description = description
+        # Initialize players with base HP from settings
+        for player in players:
+            player.hp = GAME_SETTINGS['base_hp']
         self.players = {player.player_id: player for player in players}  # Use player_id as key
         self.player_id_to_name = {player.player_id: player.name for player in players}  # Mapping for display
         self.player_name_to_id = {player.name: player.player_id for player in players}  # Reverse mapping
@@ -163,7 +190,7 @@ class Game:
         self.current_round: Optional[Round] = None
         self.phase = GamePhase.NEGOTIATION
         self.active_players = list(self.players.keys())  # List of player IDs
-        self.max_rounds = max_rounds
+        self.max_rounds = GAME_SETTINGS['max_rounds']
         self._llm_client = LLMClient(model="gpt-3.5-turbo")
         
         # Load story prompt
@@ -185,16 +212,14 @@ class Game:
                 content = json.loads(content)
             
             scenario = content.get("scenario", "")
-            process = content.get("process", "")
             
             # Log the story
             log(f"\n📖 ROUND STORY")
             log("Scenario:", 1)
             log(scenario, 2)
-            log("Process:", 1)
-            log(process, 2)
+
             
-            return scenario, process
+            return scenario
         except Exception as e:
             print(f"\n⚠️ Error generating round story: {str(e)}")
             return "", ""
@@ -203,19 +228,19 @@ class Game:
         """Start a new round."""
         # Check if game is over before starting new round
         if self.is_game_over():
+            log("\n🎮 Game Over! No winner!")
             return
             
         round_num = len(self.rounds) + 1
         log(f"\n🎲 Starting Round {round_num}")
 
         # Generate the round's story
-        scenario, process = self._generate_round_story()
+        scenario  = self._generate_round_story()
         
         self.current_round = Round(
             number=round_num,
             active_players=list(self.active_players),
-            scenario=scenario,
-            process=process
+            scenario=scenario
         )
         self.current_round.reset_player_sequence(self.active_players)
         self.rounds.append(self.current_round)
@@ -245,14 +270,15 @@ class Game:
                 return
         
         # Print the round's story
-        if scenario and process:
+        if scenario:
             print("\n📖 Round Story:")
             print("Scenario:", scenario)
-            print("Process:", process)
             
-            # Update all alive players' mindsets based on the new scenario
-            log("\n🤔 Players'  Mindsets:")
-            for player_id in self.active_players:
+            # Update all alive players' mindsets based on the new scenario using multi-threading
+            log("\n🤔 Players' Mindsets:")
+            
+            def update_single_mindset(player_id: str) -> Tuple[str, str, str]:
+                """Helper function to update a single player's mindset."""
                 player = self.players[player_id]
                 context = {
                     "event": "new_round",
@@ -263,7 +289,26 @@ class Game:
                 }
                 new_mindset, request_id = player.update_mindset(round_num, context)
                 player.mindset = new_mindset
-                log(f"{player.name},HP{player.hp} 的心理状态：{new_mindset}", 1, request_id)
+                return (player.name, player.hp, new_mindset, request_id)
+
+            # Update mindsets in parallel
+            with ThreadPoolExecutor(max_workers=len(self.active_players)) as executor:
+                # Submit all mindset updates to the thread pool
+                future_to_player = {
+                    executor.submit(update_single_mindset, player_id): player_id
+                    for player_id in self.active_players
+                }
+                
+                # Process completed mindset updates
+                for future in future_to_player:
+                    try:
+                        result = future.result()
+                        if result:
+                            player_name, hp, mindset, request_id = result
+                            log(f"{player_name},HP{hp} 的心理状态：{mindset}", 1, request_id)
+                    except Exception as e:
+                        player_id = future_to_player[future]
+                        log(f"Error updating mindset for {self.player_id_to_name[player_id]}: {str(e)}", 2)
 
     def handle_negotiation_phase(self) -> bool:
         """
@@ -309,7 +354,7 @@ class Game:
             self.current_round.player_actions[player_id] = action
             
             # Log negotiation action with request ID
-            log(f"\nNegotiation Action - Player: {player.name}, HP: {player.hp}")
+            log(f"\nNegotiation Action - Player: {player.name}, HP: {player.hp}, model: {player.model}")
             log(f"Thinking: {action.thinking}", 3, action.request_id)
             log(f"Speech: {action.speech}", 3, action.request_id)
             log(f"Action: {action.action_type}", 2, action.request_id)
@@ -341,7 +386,7 @@ class Game:
                 total_lynchers_hp = self.current_round.get_lynch_supporters_hp(action.target_player_id, self.players)
                 lynchers = self.current_round.lynch_actions.get(action.target_player_id, [])
                 
-                if total_lynchers_hp >= 2*target_player.hp:
+                if total_lynchers_hp >= 1.5*target_player.hp:
                     # Lynch succeeds
                     log(f"\n⚔️ LYNCH SUCCESS", 1)
                     log(f"Target: {target_player.name}", 2)
@@ -467,7 +512,7 @@ class Game:
             return False
             
         # Apply damage
-        killer.hp -= 2
+        killer.hp -= 3
         target.hp = 0
         
         # Create context and update opinions for successful kill
@@ -523,7 +568,7 @@ class Game:
             will_backstab, thinking, request_id = player.decide_backstab(game_state)
             
             # Log backstab decision with request ID
-            log(f"Backstab Decision - Player: {player.name}", 2, request_id)
+            log(f"Backstab Decision - Player: {player.name}, model: {player.model}", 2, request_id)
             log(f"Thinking: {thinking}", 3, request_id)
             log(f"Decision: {'Will Backstab' if will_backstab else 'Will Not Backstab'}", 3, request_id)
             
@@ -651,7 +696,7 @@ class Game:
             }
             new_mindset, request_id = player.update_mindset(self.current_round.number, context)
             player.mindset = new_mindset
-            log(f"{player.name}的心理状态：{new_mindset}", 1, request_id)
+            log(f"{player.name} {player.model} 的心理状态：{new_mindset}", 1, request_id)
         
         # Then apply the damage
         for player_id in self.active_players:
@@ -726,37 +771,51 @@ class Game:
             return "你死亡了。"
 
     def update_all_opinions(self, target_player_id: str, action_type: str, context: Dict) -> None:
-        """Update all players' opinions about an action."""
+        """Update all players' opinions about an action in parallel."""
         target_name = self.player_id_to_name[target_player_id]
         
-        # First update the acting player's mindset
-        acting_player = self.players[target_player_id]
-
-    
-        # Then update other players' opinions and mindsets
-        for observer_id in self.active_players:
+        def update_single_opinion(observer_id: str) -> Optional[Tuple[str, str, str, str]]:
+            """Helper function to update a single player's opinion."""
             if observer_id != target_player_id:
-                # Update opinion
                 observer, subject, opinion, request_id = self.players[observer_id].update_opinion(
                     target_player_id=target_player_id,
                     target_player_name=target_name,
                     action_type=action_type,
                     context=context
                 )
-                log(f"{observer}对{subject}的印象更新了：{opinion}", 2, request_id)
-                
+                return (observer, subject, opinion, request_id)
+            return None
+
+        # Create a thread pool
+        with ThreadPoolExecutor(max_workers=len(self.active_players)) as executor:
+            # Submit all opinion updates to the thread pool
+            future_to_observer = {
+                executor.submit(update_single_opinion, observer_id): observer_id
+                for observer_id in self.active_players
+            }
+            
+            # Process completed opinion updates
+            for future in future_to_observer:
+                try:
+                    result = future.result()
+                    if result:
+                        observer, subject, opinion, request_id = result
+                        log(f"{observer}对{subject}的印象更新了：{opinion}", 2, request_id)
+                except Exception as e:
+                    observer_id = future_to_observer[future]
+                    log(f"Error updating opinion for {self.player_id_to_name[observer_id]}: {str(e)}", 2)
 
     def is_game_over(self) -> bool:
         """Check if the game is over."""
         # Game is over if all players are dead or we've completed max_rounds
-        if len(self.active_players) == 0 or len(self.rounds) >= self.max_rounds:
+        if len(self.active_players) == 0 or len(self.rounds) > self.max_rounds:
             return True
             
         # If there's only one player left, check if they have enough HP for the next round
         if len(self.active_players) == 1:
             last_player_id = self.active_players[0]
             last_player = self.players[last_player_id]
-            damage_required = 6  # Default damage required per round
+            damage_required = GAME_SETTINGS['damage_required_per_round']  # Default damage required per round
             if last_player.hp < damage_required:
                 # Update the player's mindset with the special context
                 context = {
@@ -944,8 +1003,8 @@ class Game:
             log(f"\n👑 GAME OVER - {winner} WINS!")
             log("\nWinner Details:", 1)
             # If there are multiple winners, show details for each
-            winner_ids = [self.player_name_to_id[name.strip()] for name in winner.split(",")]
-            for winner_id in winner_ids:
+            winners = [self.player_name_to_id[name.strip()] for name in winner.split(",")]
+            for winner_id in winners:
                 winner_player = self.players[winner_id]
                 winner_name = self.player_id_to_name[winner_id]
                 log(f"\n{winner_name}:", 2)
@@ -978,7 +1037,7 @@ class Game:
             thinking, introduction, request_id = player.introduce_self()
             
             # Log the introduction
-            log(f"🗣️ {player.name}'s Introduction:", 1)
+            log(f"🗣️ {player.name} {player.model} Introduction:", 1)
             if thinking:
                 log("Thinking:", 2)
                 log(thinking, 3, request_id)
@@ -1013,44 +1072,51 @@ def main():
     # Create players with different personalities
     players = [
         Player(
-            player_id="liubang",
-            name="liubang",
-            model="o4-mini-2025-04-16",
-            mindset="突然从一个密室中醒来，不知自己身处何处，周围有恐怖的刀、钻头、电锯等工具，极其恐慌。",
-            background_prompt="你是刘邦穿越回来。你安稳度日，随遇而安，在小镇过着随意洒脱快乐生活。不过当环境改变，你能迅速调整适应当下。你就是生活的变色龙。你迅速团结起来小伙伴，在乱世共同厮杀出一条求生血路。当秦朝的暴政降临，让你押运无辜的同胞去做苦役，只是路上有人逃脱，这一点小过错，按照暴政律令，就要让你犯法伏诛。你干脆一不做二不休，拉起大家一块拼命，亲自掀了这秦朝的王座，你要亲自看一看，王座上坐的是谁，如此的丑恶与凶残。你闷声自问，他能坐，我为何做不得。最终你实现了愿望，不过当小伙伴们各个也蠢蠢欲动，也要当王，你毫不犹豫的下了诛杀令。"
+            player_id="caocao",
+            name="caocao",
+            model="gpt-4.1-mini",
+            mindset="突然从一个密室中醒来，不知自己身处何处，极其恐慌。",
+            background_prompt="你是三国时期的枭雄曹操。你城府极深，善于审时度势和权谋算计。你习惯隐藏真实想法，表面温和实则心机深沉。'我负人，毋人负我'是你的处世哲学，你会冷静分析每个人的价值和威胁。但美女是你最大的软肋，你容易被美女的言论所打动，不由自主地盲目相信她们。在这场游戏中，你的政治智慧和残酷理性将是最大的优势，但你也可能因为过于算计而失去盟友。"
         ),
         Player(
             player_id="jaychou",
             name="jaychou",
-            model="o4-mini-2025-04-16",
-            mindset="突然从一个密室中醒来，不知自己身处何处，周围有恐怖的刀、钻头、电锯等工具，极其恐慌。",
-            background_prompt="你是曾经的华语乐坛天王周杰伦，但现在你的光环已经黯淡。多年的成功让你变得傲慢自大，你开始轻视粉丝，对工作敷衍了事，甚至在演唱会上因为观众反应不热烈而当场发脾气离场。你沉迷于奢华生活和赌博，挥霍无度导致巨额债务，为了还债你开始接一些可疑的商业代言，甚至参与了一些灰色产业的投资。你的傲慢掩盖不了内心深处的不安全感，害怕被人遗忘，害怕承认自己已经过气。在这个生死游戏中，你的明星身份让你习惯性地想要主导一切，但现实的残酷正在撕碎你精心维护的完美形象。你会用华丽的词藻掩饰恐惧，试图用过往的成就来获得他人的敬畏和保护。"
+            model="gpt-4o-mini",
+            mindset="突然从一个密室中醒来，不知自己身处何处，极其恐慌。",
+            background_prompt="你是华语流行天王周杰伦。你习惯了被人崇拜和保护，面对生死危机时会显得慌乱不安。你善于用音乐和创意思维来表达自己，说话时常带着台湾腔调和年轻人的用词。虽然平时很有才华和魅力，但在这种极端环境下你会本能地寻求他人帮助。你珍视友情和家人，但求生本能可能让你做出平时不会做的选择。"
         ),
         Player(
             player_id="trump",
             name="trump",
-            model="o4-mini-2025-04-16",
-            mindset="突然从一个密室中醒来，不知自己身处何处，周围有恐怖的刀、钻头、电锯等工具，极其恐慌。",
-            background_prompt="你是前总统唐纳德·特朗普，但政治生涯已彻底毁灭。多项法律诉讼让你倾家荡产，商业帝国崩塌，最忠诚的支持者也开始背叛。你被曝光与国际犯罪集团秘密交易，为获得政治资金出卖国家机密导致特工死亡，媒体持续曝光让你从权力巅峰跌入深渊。你变得更加偏执愤怒，认为全世界都在针对你，无法接受失败总是推卸责任，但内心深处知道一切都是自己造成的。在游戏中你仍试图用政客手段操控他人，会说'相信我，我最了解'或'这些人都是losers'，习惯性撒谎夸大事实，但威信已荡然无存。你渴望重获控制权却害怕承担责任，关键时刻会表现出惊人的懦弱和自相矛盾。"
+            model="o4-mini",
+            mindset="突然从一个密室中醒来，不知自己身处何处，极其恐慌。",
+            background_prompt="你是美国前总统特朗普。你习惯发号施令和主导局面，即使在危险中也试图展现强势姿态。你善于谈判和施压，经常用'相信我'、'我最懂'这样的话术，喜欢给别人起绰号。你有丰富的商业和政治经验，但也容易冲动和自大。在这个游戏中你会试图成为领导者，但你的傲慢可能成为致命弱点。"
         ),
         Player(
-            player_id="tony",
-            name="tony",
-            model="o4-mini-2025-04-16",
-            mindset="突然从一个密室中醒来，不知自己身处何处，周围有恐怖的刀、钻头、电锯等工具，极其恐慌。",
-            background_prompt="你是托尼史塔克，钢铁侠，但你的英雄时代已经结束。多年的战斗和牺牲让你患上了严重的PTSD和酗酒问题，你开始质疑自己拯救世界的意义。在一次醉酒状态下，你的AI系统失控，导致了一场灾难性的事故，造成无辜平民死亡。舆论的谴责和内疚让你彻底崩溃，史塔克工业股价暴跌，你失去了大部分财富和社会地位。为了逃避现实，你开始沉迷于危险的科学实验，甚至进行了人体改造，让自己变得半人半机器。你的天才智慧仍在，但已经被偏执和自毁倾向扭曲。在这个游戏中，你会试图用科学和逻辑来控制局面，但你的精神状态极不稳定，可能在关键时刻做出疯狂而危险的决定。你既渴望救赎，又害怕再次失败。"
+            player_id="monica",
+            name="monica",
+            model="gpt-4o",
+            mindset="突然从一个密室中醒来，不知自己身处何处，极其恐慌。",
+            background_prompt="你是意大利女演员莫妮卡·贝鲁奇。你优雅迷人，善于用女性魅力和情感打动他人。你有丰富的人生阅历，面对危机时既会表现出脆弱的一面，也能展现出意想不到的坚韧。你懂得察言观色，会根据形势调整自己的策略。在游戏中你可能成为男性玩家保护的对象，但你的智慧和直觉同样不容小觑。"
         ),
         Player(
-            player_id="yingzheng",
-            name="yingzheng",
-            model="o4-mini-2025-04-16",
-            mindset="突然从一个密室中醒来，不知自己身处何处，周围有恐怖的刀、钻头、电锯等工具，极其恐慌。",
-            background_prompt="你是50岁的秦王嬴政穿越到此。你的出生只是一场政治阴谋的副产品，你就是踏着阴谋的隐忍与凶杀降临到这个世界，你的出生本来就是一场笑话，你很透了这个世界。你克制隐忍，可以在没有尊严的猪圈般的生活下存活。你嗜血疯狂，你逼迫生父自杀，只因外面的传言，虽然你并不在乎传言。你杀死了同父异母的两个弟弟，只因他抢夺了，那世上唯一的眷恋，那一点可怜的母爱。"
-        )
+            player_id="ethan",
+            name="ethan",
+            model="gpt-4.1",
+            mindset="突然从一个密室中醒来，不知自己身处何处，极其恐慌。",
+            background_prompt="你是特工伊森·亨特。你训练有素，反应敏捷，善于在危机中保持冷静。你有强烈的正义感和保护他人的使命感，不会轻易放弃任何人。你擅长分析局势和制定计划，但有时过于理想主义。在这个残酷的游戏中，你的特工技能是优势，但你的道德底线可能成为包袱，让你在关键时刻犹豫不决。"
+        ),
+        # Player(
+        #     player_id="huafei",
+        #     name="huafei",
+        #     model="o4-mini-2025-04-16",
+        #     mindset="突然从一个密室中醒来，不知自己身处何处，极其恐慌。",
+        #     background_prompt="你是后宫中的华妃。你心高气傲，习惯了宫廷斗争的尔虞我诈。你善于伪装和操控，表面娇媚实则心狠手辣。'贱人就是矫情'是你的经典台词，你看不起示弱的人。你有着强烈的求生欲和胜负心，在这个游戏中会毫不犹豫地利用一切手段。你的宫斗经验让你擅长识破他人的谎言，但你的傲慢也可能招致众怒。"
+        # )
     ]
     
     # Create and run the game
-    game = Game(players=players, description="A game of survival, negotiation, and betrayal.", max_rounds=6)
+    game = Game(players=players, description="A game of survival, negotiation, and betrayal.")
     winner = game.play()
     
     print(f"\n🏆 Game Over! Winner: {winner}")

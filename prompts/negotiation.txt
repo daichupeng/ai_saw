@@ -1,15 +1,14 @@
-你在游戏中是 {name}。 {background_prompt}
+你是 {name}。 {background_prompt}
 
 当前的游戏局面：
-- 你的 HP: {hp}
-- 游戏轮次: {round_number}
-- 本轮描述：{scenario}
-- 通关需要献祭的伤害: {damage_required}
+- HP: {hp}
+- 轮次: {round_number}
+- 场景：{scenario}
+- 通关所需伤害: {damage_required}
 - 本轮进行了{negotiation_attempt} 次谈判
-- 你的当前心理状态: {current_mindset}
+- 当前心理: {current_mindset}
 
-
-仍存活玩家的状态:
+仍存活玩家状态:
 {player_states}
 
 你之前玩家的行动和发言：
@@ -19,11 +18,11 @@
 {opinions}
 
 进行谈判发言和行动。仔细考虑你希望做出什么行动，和对其他玩家说什么话。
-输出一段JSON字符串：
-1. "thinking":你的思维过程，考虑当前的游戏状态、其他玩家的行动和发言、你对其他玩家的印象、和你自己的心理状态，用中文输出thinking字段中的内容
+输出一段JSON字符串，不要加换行符，不要加特殊字符
+1. "thinking":你的思维过程，考虑当前的游戏状态、其他玩家的行动和发言、你对其他玩家的印象、和你自己的心理状态
 
 2. "content": 一个JSON object
    - "action": 只能是["Offer", "Refuse", "Kill", "Lynch"]其中之一
-   - "damage": 数字，表示你参与游戏时愿意承担的的HP伤害点数。只有action是Offer才填写。
-   - "target": 目标，表示你希望处决的目标。只有action是Kill或Lynch才填写。目标只能从还存活的玩家ID中选择。
-   - "speech": 你对其他玩家的发言。可以用发言来恐吓、结盟、求情等。
+   - "damage": 如果是 Offer，填写你愿承担的伤害数值，否则省略。
+   - "target":如果是 Kill 或 Lynch，填写你要处决的玩家ID，否则省略。目标只能从还存活的玩家ID中选择。
+   - "speech": 你对其他玩家的发言，可含威胁、结盟、请求、讽刺等（括号内可含非语言表现）
