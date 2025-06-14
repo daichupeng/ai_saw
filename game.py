@@ -165,7 +165,17 @@ class Round:
         return None
 
     def add_lynch_action(self, lyncher_id: str, target_id: str) -> None:
-        """Add a lynch action to the tracking."""
+        """Add a lynch action to the tracking, overwriting any previous lynch action by the same player."""
+        # Remove lyncher from any previous lynch actions
+        for target, lynchers in self.lynch_actions.items():
+            if lyncher_id in lynchers:
+                lynchers.remove(lyncher_id)
+                # If no lynchers remain for this target, remove the target entry
+                if not lynchers:
+                    del self.lynch_actions[target]
+                break
+        
+        # Add new lynch action
         if target_id not in self.lynch_actions:
             self.lynch_actions[target_id] = []
         self.lynch_actions[target_id].append(lyncher_id)
@@ -232,17 +242,13 @@ class Game:
             return
             
         round_num = len(self.rounds) + 1
-        log(f"\n🎲 Starting Round {round_num}")
 
-        # Generate the round's story
-        scenario  = self._generate_round_story()
         
         self.current_round = Round(
             number=round_num,
-            active_players=list(self.active_players),
-            scenario=scenario
+            active_players=list(self.active_players)
         )
-        self.current_round.reset_player_sequence(self.active_players)
+        # self.current_round.reset_player_sequence(self.active_players)
         self.rounds.append(self.current_round)
         self.phase = GamePhase.NEGOTIATION
         
@@ -268,7 +274,12 @@ class Game:
                 self.current_round.status = RoundStatus.COMPLETED
                 print("\n🎮 Game Over! No winner!")
                 return
-        
+            
+        log(f"\n🎲 Starting Round {round_num}")
+
+        # Generate the round's story
+        scenario  = self._generate_round_story()
+        self.current_round.scenario = scenario
         # Print the round's story
         if scenario:
             print("\n📖 Round Story:")
@@ -386,7 +397,7 @@ class Game:
                 total_lynchers_hp = self.current_round.get_lynch_supporters_hp(action.target_player_id, self.players)
                 lynchers = self.current_round.lynch_actions.get(action.target_player_id, [])
                 
-                if total_lynchers_hp >= 1.5*target_player.hp:
+                if total_lynchers_hp >= 1.5*target_player.hp and len(lynchers) >= 2:
                     # Lynch succeeds
                     log(f"\n⚔️ LYNCH SUCCESS", 1)
                     log(f"Target: {target_player.name}", 2)
@@ -511,25 +522,48 @@ class Game:
             self.update_all_opinions(killer_id, context.event.value, context.to_dict())
             return False
             
-        # Apply damage
+        # Calculate kill success probability based on HP difference
+        hp_difference = killer.hp - target.hp
+        kill_chance = min(0.25 * hp_difference, 0.9)
+        
+        # Apply damage to killer regardless of success
         killer.hp -= 3
-        target.hp = 0
         
-        # Create context and update opinions for successful kill
-        context = Context(
-            event=EventType.KILL,
-            round_number=self.current_round.number,
-            acting_player=killer.name,
-            target_player=target.name,
-            speech=action.speech,
-            outcome="成功杀死目标"
-        )
-        self.update_all_opinions(killer_id, context.event.value, context.to_dict())
-        self.eliminate_player(action.target_player_id, "killed", killer_id=killer_id)
+        # Determine if kill is successful
+        success = random.random() < kill_chance
         
-        # Complete round
-        self.current_round.status = RoundStatus.COMPLETED
-        return True
+        if success:
+            # Kill was successful
+            target.hp = 0
+            
+            # Create context and update opinions for successful kill
+            context = Context(
+                event=EventType.KILL,
+                round_number=self.current_round.number,
+                acting_player=killer.name,
+                target_player=target.name,
+                speech=action.speech,
+                outcome=f"{killer.name}损失3点HP，成功杀死{target.name}"
+            )
+            self.update_all_opinions(killer_id, context.event.value, context.to_dict())
+            self.eliminate_player(action.target_player_id, "killed", killer_id=killer_id)
+            
+            # Complete round
+            self.current_round.status = RoundStatus.COMPLETED
+            return True
+        else:
+            # Kill failed but killer still takes damage
+            context = Context(
+                event=EventType.KILL,
+                round_number=self.current_round.number,
+                acting_player=killer.name,
+                target_player=target.name,
+                speech=action.speech,
+                outcome=f"{killer.name}损失3点HP，但未能杀死{target.name}"
+            )
+            self.update_all_opinions(killer_id, context.event.value, context.to_dict())
+            log(f"❌ Kill action failed: {killer.name}'s attempt to kill {target.name} was unsuccessful (chance was {kill_chance*100:.1f}%)")
+            return False
 
     def handle_execution_phase(self) -> None:
         """Handle the execution phase."""
@@ -869,7 +903,7 @@ class Game:
                     observer = self.players[observer_id]
                     target_name = self.player_id_to_name[target_id]
                     context = {
-                        "event": "game_end",
+                        "event": "survived",
                         "round": len(self.rounds),
                         "outcome": f"游戏结束，你和{target_name}一起活了下来。你只剩下了{observer.hp}点血量，而{target_name}只剩下了{self.players[target_id].hp}点血量。"
                     }
@@ -918,7 +952,7 @@ class Game:
             while self.phase == GamePhase.NEGOTIATION:
                 log(f"\n💬 NEGOTIATION ATTEMPT {self.current_round.negotiation_attempts + 1}")
                 log(f"Damage Required: {self.current_round.damage_required}", 1)
-                
+                self.current_round.reset_player_sequence(self.active_players)
                 success = self.handle_negotiation_phase()
                 
                 # Check if game ended during negotiation
@@ -1074,14 +1108,14 @@ def main():
         Player(
             player_id="caocao",
             name="caocao",
-            model="gpt-4.1-mini",
+            model="o4-mini",
             mindset="突然从一个密室中醒来，不知自己身处何处，极其恐慌。",
             background_prompt="你是三国时期的枭雄曹操。你城府极深，善于审时度势和权谋算计。你习惯隐藏真实想法，表面温和实则心机深沉。'我负人，毋人负我'是你的处世哲学，你会冷静分析每个人的价值和威胁。但美女是你最大的软肋，你容易被美女的言论所打动，不由自主地盲目相信她们。在这场游戏中，你的政治智慧和残酷理性将是最大的优势，但你也可能因为过于算计而失去盟友。"
         ),
         Player(
             player_id="jaychou",
             name="jaychou",
-            model="gpt-4o-mini",
+            model="o4-mini",
             mindset="突然从一个密室中醒来，不知自己身处何处，极其恐慌。",
             background_prompt="你是华语流行天王周杰伦。你习惯了被人崇拜和保护，面对生死危机时会显得慌乱不安。你善于用音乐和创意思维来表达自己，说话时常带着台湾腔调和年轻人的用词。虽然平时很有才华和魅力，但在这种极端环境下你会本能地寻求他人帮助。你珍视友情和家人，但求生本能可能让你做出平时不会做的选择。"
         ),
@@ -1095,14 +1129,14 @@ def main():
         Player(
             player_id="monica",
             name="monica",
-            model="gpt-4o",
+            model="o4-mini",
             mindset="突然从一个密室中醒来，不知自己身处何处，极其恐慌。",
             background_prompt="你是意大利女演员莫妮卡·贝鲁奇。你优雅迷人，善于用女性魅力和情感打动他人。你有丰富的人生阅历，面对危机时既会表现出脆弱的一面，也能展现出意想不到的坚韧。你懂得察言观色，会根据形势调整自己的策略。在游戏中你可能成为男性玩家保护的对象，但你的智慧和直觉同样不容小觑。"
         ),
         Player(
             player_id="ethan",
             name="ethan",
-            model="gpt-4.1",
+            model="o4-mini",
             mindset="突然从一个密室中醒来，不知自己身处何处，极其恐慌。",
             background_prompt="你是特工伊森·亨特。你训练有素，反应敏捷，善于在危机中保持冷静。你有强烈的正义感和保护他人的使命感，不会轻易放弃任何人。你擅长分析局势和制定计划，但有时过于理想主义。在这个残酷的游戏中，你的特工技能是优势，但你的道德底线可能成为包袱，让你在关键时刻犹豫不决。"
         ),
