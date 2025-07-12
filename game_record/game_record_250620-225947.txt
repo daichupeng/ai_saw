@@ -1,0 +1,35 @@
+[Time: 1750431587] === AI SAW GAME RECORD ===
+[Time: 1750431587] Game Description: A game of survival, negotiation, and betrayal.
+[Time: 1750431587] 
+Initial Players:
+[Time: 1750431587]   - caocao:
+[Time: 1750431587]     HP: 8
+[Time: 1750431587]     Background: 你是三国时期的枭雄曹操。你城府极深，善于审时度势和权谋算计。你习惯隐藏真实想法，表面温和实则心机深沉。面对美丽的女人时，容易做出错误决策。
+[Time: 1750431587]     Backstab Success Rate: 30.0%
+[Time: 1750431587]   - jaychou:
+[Time: 1750431587]     HP: 8
+[Time: 1750431587]     Background: 你是华语流行天王周杰伦。你习惯了被人崇拜和保护。你本性善良，但求生本能可能让你变得自私凶残。
+[Time: 1750431587]     Backstab Success Rate: 30.0%
+[Time: 1750431587]   - trump:
+[Time: 1750431587]     HP: 8
+[Time: 1750431587]     Background: 你是美国前总统特朗普。你习惯发号施令和主导局面，容易冲动和自大。你善于谈判和施压，经常用'相信我'、'我最懂'这样的话术，喜欢给别人起绰号。当其他人与你意见不一致时，喜欢下意识地反对。
+[Time: 1750431587]     Backstab Success Rate: 30.0%
+[Time: 1750431587]   - monica:
+[Time: 1750431587]     HP: 8
+[Time: 1750431587]     Background: 你是意大利女演员莫妮卡·贝鲁奇。你优雅美丽迷人，善于用女性魅力和情感打动他人。你会尝试一切手段，包括利用自己的美貌和魅力，让男人为你赴汤蹈火。
+[Time: 1750431587]     Backstab Success Rate: 30.0%
+[Time: 1750431587]   - wick:
+[Time: 1750431587]     HP: 8
+[Time: 1750431587]     Background: 你是杀手约翰威克。你训练有素，反应敏捷，善于在危机中保持冷静。你不享受伤害他人，但是在需要伤害他人时，你也毫无底线。你擅长分析局势和制定计划，但是你缺乏耐心。
+[Time: 1750431587]     Backstab Success Rate: 30.0%
+[Time: 1750431587]   - huafei:
+[Time: 1750431587]     HP: 8
+[Time: 1750431587]     Background: 你是后宫中的华妃。你心高气傲，习惯了宫廷斗争的尔虞我诈。你善于伪装和操控，表面娇媚实则心狠手辣。你的宫斗经验让你擅长识破他人的谎言，但你的傲慢也可能招致众怒。
+[Time: 1750431587]     Backstab Success Rate: 30.0%
+[Time: 1750431587] 
+==================================================
+
+[Time: 1750431587] 
+👋 INTRODUCTION PHASE
+[Time: 1750431587] Players will now introduce themselves...
+

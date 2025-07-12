@@ -68,7 +68,7 @@ class LLMClient:
                             #   , base_url="https://api.deepseek.com"
                               )
     
-    def get_response(self, prompt: str) -> LLMResponse:
+    def get_response(self, prompt: str,system_prompt: Optional[str] = None) -> LLMResponse:
         """Get a response from the LLM."""
         # Generate a unique request ID
         request_id = str(uuid.uuid4())
@@ -78,7 +78,7 @@ class LLMClient:
             response = self._client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": self._system_prompt},
+                    {"role": "system", "content": system_prompt or self._system_prompt},
                     {"role": "user", "content": prompt}
                 ]
             )

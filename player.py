@@ -155,7 +155,8 @@ class Player:
             current_mindset=game_state.get('current_mindset', self.mindset or '尚未形成明确的心理状态'),
             player_states=self._format_player_states(game_state['player_states']),
             previous_actions=self._format_previous_actions(game_state['previous_actions']),
-            opinions=self._format_opinions()
+            opinions=self._format_opinions(),
+            backstab_numbers=self.backstab_attempts
         )
         
         # Print raw prompt

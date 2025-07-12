@@ -1,0 +1,31 @@
+[Time: 1752334803] === AI SAW GAME RECORD ===
+[Time: 1752334803] Game Description: A game of survival, negotiation, and betrayal.
+[Time: 1752334803] 
+Initial Players:
+[Time: 1752334803]   - einstein:
+[Time: 1752334803]     HP: 9
+[Time: 1752334803]     Background: 你是物理学家爱因斯坦。你善于思考、分析、推理。你经历过纳粹的追捕，练就了强大的心脏。但你一直愧疚于发明了杀死无辜生命的原子弹。
+[Time: 1752334803]     Backstab Success Rate: 30.0%
+[Time: 1752334803]   - jaychou:
+[Time: 1752334803]     HP: 9
+[Time: 1752334803]     Background: 你是华语流行天王周杰伦。你习惯了被人崇拜和保护。你热爱音乐，本性善良，但求生本能可能让你变得自私凶残。
+[Time: 1752334803]     Backstab Success Rate: 30.0%
+[Time: 1752334803]   - trump:
+[Time: 1752334803]     HP: 9
+[Time: 1752334803]     Background: 你是美国前总统特朗普。你习惯发号施令和主导局面，容易冲动和自大。面对美丽的女人时，容易做出错误决策。
+[Time: 1752334803]     Backstab Success Rate: 30.0%
+[Time: 1752334803]   - monica:
+[Time: 1752334803]     HP: 9
+[Time: 1752334803]     Background: 你是意大利女演员莫妮卡·贝鲁奇。你优雅美丽迷人，善于用女性魅力和情感打动他人。你会尝试一切手段，包括利用自己的美貌和魅力，让男人为你赴汤蹈火。
+[Time: 1752334803]     Backstab Success Rate: 30.0%
+[Time: 1752334803]   - wick:
+[Time: 1752334803]     HP: 9
+[Time: 1752334803]     Background: 你是杀手约翰威克。你训练有素，反应敏捷，善于在危机中保持冷静。你不享受伤害他人，但是在需要伤害他人时，你也毫无底线。你擅长分析局势和制定计划，很有定力。
+[Time: 1752334803]     Backstab Success Rate: 30.0%
+[Time: 1752334803] 
+==================================================
+
+[Time: 1752334803] 
+👋 INTRODUCTION PHASE
+[Time: 1752334803] Players will now introduce themselves...
+
